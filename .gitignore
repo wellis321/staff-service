@@ -1,0 +1,41 @@
+# Environment files
+.env
+.env.local
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+!uploads/people/.gitkeep
+!uploads/people/photos/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+.vscode/
+.cursor/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Composer
+vendor/
+composer.lock
+
+# Temporary files
+tmp/
+temp/
+
+# Shared auth (symlink)
+shared-auth
+
+# Test coverage
+coverage/
+.phpunit.cache/
+

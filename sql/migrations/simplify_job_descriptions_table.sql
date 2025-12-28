@@ -1,0 +1,31 @@
+-- Migration: Simplify job_descriptions to be generic templates only
+-- Remove position-specific fields that belong in job_posts
+--
+-- NOTE: MySQL does not support "DROP COLUMN IF EXISTS"
+-- Use the PHP migration script instead: migrate-simplify-job-descriptions.php
+-- Or run these commands one at a time, checking if columns exist first
+--
+-- To check if a column exists:
+-- SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+-- WHERE TABLE_SCHEMA = DATABASE() 
+-- AND TABLE_NAME = 'job_descriptions' 
+-- AND COLUMN_NAME = 'location';
+--
+-- Then drop if it exists:
+-- ALTER TABLE job_descriptions DROP COLUMN location;
+
+-- Fields to remove (position-specific):
+-- location
+-- hours_per_week
+-- salary_range_min
+-- salary_range_max
+-- salary_currency
+-- contract_type
+-- reporting_to
+-- department
+
+-- Keep these fields in job_descriptions as they're generic:
+-- title, code, description, responsibilities, requirements
+-- external_system, external_id, external_url (for linking to external job description libraries)
+-- is_active, version, created_by, created_at, updated_at
+
