@@ -201,6 +201,7 @@
             <div class="container">
                 <a href="<?php echo Auth::isLoggedIn() ? url('index.php') : url('landing.php'); ?>" class="logo">
                     <img src="<?php echo url('assets/images/New White Logo.png'); ?>" alt="<?php echo APP_NAME; ?>" class="logo-img">
+                    <span class="logo-text">Staff Service</span>
                 </a>
                 <button class="mobile-menu-toggle" aria-label="Toggle menu" style="display: none;">
                     <i class="fas fa-bars"></i>

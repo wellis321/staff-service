@@ -2,7 +2,9 @@
     <footer>
         <div class="container">
             <div class="footer-section">
-                <img src="<?php echo url('assets/images/New White Logo.png'); ?>" alt="<?php echo APP_NAME; ?>" class="footer-logo">
+                <a href="<?php echo Auth::isLoggedIn() ? url('index.php') : url('landing.php'); ?>" class="footer-logo-link">
+                    <img src="<?php echo url('assets/images/New White Logo.png'); ?>" alt="<?php echo APP_NAME; ?>" class="footer-logo">
+                </a>
                 <h3 style="color: white; margin-top: 0.5rem; margin-bottom: 1rem;"><?php echo APP_NAME; ?></h3>
                 <p style="color: #9ca3af; line-height: 1.6;">
                     People Management Service for social care providers. 

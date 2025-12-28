@@ -60,10 +60,17 @@ nav .container {
 }
 
 .logo-img {
-    height: 50px;
+    height: 60px;
     width: auto;
     display: block;
     max-width: 200px;
+}
+
+.logo-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    margin-left: 0.75rem;
 }
 
 .logo:hover {
@@ -466,6 +473,16 @@ footer .container {
     font-size: 1.125rem;
     font-weight: 600;
     margin-bottom: 1rem;
+}
+
+.footer-logo-link {
+    display: inline-block;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.footer-logo-link:hover {
+    opacity: 0.8;
 }
 
 .footer-logo {
