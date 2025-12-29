@@ -51,6 +51,96 @@ Or if setting up fresh, the `complete_schema.sql` includes these tables.
    - Organisational unit assignment (optional)
 5. Click "Create Staff Member"
 
+### 3a. Getting Digital ID Cards for Staff Members
+
+After creating a staff member in Staff Service, they need an employee record in Digital ID to get a digital ID card. The process depends on whether Digital ID is integrated with Staff Service.
+
+**First, set up the integration** (if not already done):
+
+1. **Create API Key in Staff Service**:
+   
+   **Web Interface (Recommended)**:
+   - Log in to Staff Service as an organisation administrator
+   - Go to **Admin** → **API Keys**
+   - Click **"Create API Key"**
+   - Enter a name (e.g., "Digital ID Integration")
+   - Copy the API key immediately - it won't be shown again!
+   
+   **Command Line (Alternative)**:
+   ```bash
+   # Find your user ID and organisation ID first
+   # Then run (replace <user_id> and <organisation_id> with your actual IDs):
+   php scripts/create-api-key.php <user_id> <organisation_id> "Digital ID Integration"
+   
+   # Example (user_id=3, organisation_id=1):
+   php scripts/create-api-key.php 3 1 "Digital ID Integration"
+   ```
+   Save the API key that's displayed - you'll need it for Digital ID configuration.
+
+2. **Configure Digital ID `.env` File**:
+   Add to Digital ID's `.env` file:
+   ```env
+   USE_STAFF_SERVICE=true
+   STAFF_SERVICE_URL=http://localhost:8000
+   STAFF_SERVICE_API_KEY=your-api-key-from-step-1
+   STAFF_SYNC_INTERVAL=3600
+   ```
+   Replace `http://localhost:8000` with your actual Staff Service URL and paste the API key from step 1.
+
+**Then, sync staff members**:
+
+#### Option A: With Staff Service Integration (Recommended)
+
+When Digital ID is configured to use Staff Service as the source of truth:
+
+1. **Automatic Sync**: If the staff member has a user account linked, Digital ID will automatically detect and sync them when:
+   - The staff member accesses their Digital ID card page
+   - An admin runs the "Sync from Staff Service" function in Digital ID
+   - A webhook is received from Staff Service (if configured)
+
+2. **Manual Sync**: 
+   - Go to Digital ID admin panel → "Manage Employees"
+   - Click "Sync from Staff Service" button
+   - This will sync all staff members from Staff Service to Digital ID
+
+3. **Create Employee Record** (if sync doesn't create it automatically):
+   - Go to Digital ID admin panel → "Manage Employees"
+   - Click "Create New Employee"
+   - Select the user from the dropdown (they should appear if they have a user account)
+   - Enter the employee number (from HR/payroll system)
+   - The system will automatically link to Staff Service if a matching person is found
+
+#### Option B: Without Staff Service Integration (Standalone)
+
+If Digital ID is not integrated with Staff Service:
+
+1. **Create User Account** (if not already created):
+   - Staff member registers at Digital ID registration page, OR
+   - Admin creates user account in Digital ID
+
+2. **Create Employee Record**:
+   - Go to Digital ID admin panel → "Manage Employees"
+   - Click "Create New Employee"
+   - Select the user from the dropdown
+   - Enter employee number and display reference
+   - Click "Create Employee"
+
+3. **Upload Photo** (optional):
+   - Staff member can upload their photo through their profile
+   - Admin can upload/approve photos through the admin panel
+
+4. **View Digital ID Card**:
+   - Staff member logs into Digital ID
+   - Navigate to "Digital ID Card" page
+   - The ID card will be generated automatically
+
+#### Important Notes
+
+- **Employee Number**: This should match the employee number from your HR/payroll system. It's used for integration and cannot be changed after creation.
+- **User Account**: Staff members need a user account in Digital ID to access their digital ID card. If they don't have one, they can register or an admin can create one.
+- **Photo**: A photo is recommended but not required for the digital ID card to be generated.
+- **Signature**: If Staff Service integration is enabled and the staff member has a signature in Staff Service, it will automatically appear on their Digital ID card.
+
 ### 4. Create Staff Members via API (Recruitment System)
 
 The Staff Service can receive new hire data from recruitment systems via API, automatically creating staff members.

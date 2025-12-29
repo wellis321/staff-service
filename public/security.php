@@ -596,7 +596,7 @@ include INCLUDES_PATH . '/header.php';
             
             <div class="security-feature">
                 <h4><i class="fas fa-lock"></i> Multi-Tenant Isolation</h4>
-                <p>Complete data separation between organisations. Zero cross-organisation access, even for administrators.</p>
+                <p>Complete data separation between organisations. Zero cross-organisation access, even for administrators. API keys are automatically scoped to the organisation that created them, ensuring external integrations can only access that organisation's data.</p>
             </div>
             
             <div class="security-feature">
@@ -621,7 +621,7 @@ include INCLUDES_PATH . '/header.php';
             
             <div class="security-feature">
                 <h4><i class="fas fa-key"></i> API Security</h4>
-                <p>Secure API key authentication with key hashing, expiration support, and usage tracking.</p>
+                <p>Secure API key authentication with key hashing, expiration support, and usage tracking. Each organisation's API keys are automatically scoped to their organisation - your API key can only access your organisation's data, ensuring complete isolation even when integrating with external systems.</p>
             </div>
             
             <div class="security-feature">
@@ -643,6 +643,7 @@ include INCLUDES_PATH . '/header.php';
             <div class="security-content-block">
                 <p>You maintain complete ownership and control over all your data. There's no vendor lock-in, no external dependencies that could compromise your information. When you use the Staff Service, your data stays yours - you can export it at any time in standard formats, and you have the option to deploy the system on your own infrastructure for even greater control.</p>
                 <p>Every organisation's data is completely isolated at the database level. This means that even if you're sharing the same system with other organisations, there's zero possibility of cross-organisation data access. Staff from one organisation cannot see, access, or modify data from another organisation, even if they're administrators. This isolation is enforced at the database query level, not just in the application interface, providing an extra layer of security.</p>
+                <p>This isolation extends to API integrations as well. When you create an API key in Staff Service, it is automatically linked to your organisation. When that API key is used by external systems (like Digital ID or HR platforms), it can only access your organisation's data. Each organisation has separate API keys, and there's no way for one organisation's API key to access another organisation's information, even if they're using the same external system.</p>
             </div>
             <div class="security-image-wrapper">
                 <img src="<?php echo url('assets/images/security/dat-ownershipp-and-control.jpeg'); ?>" alt="Data ownership and control" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">

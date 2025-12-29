@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && CSRF::validatePost()) {
             $requestId = $db->lastInsertId();
             
             // Send email notification to superadmin
-            $to = 'williamjamesellis@outlook.com';
+            $to = CONTACT_EMAIL;
             $subject = 'New Organisation Access Request - ' . htmlspecialchars($organisationName);
             
             $message = "A new organisation has requested access to the Staff Service.\n\n";

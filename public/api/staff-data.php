@@ -64,8 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 // Authenticate (try API key first, then session)
 $authenticatedUser = null;
+
 if (class_exists('ApiAuth')) {
     $authenticatedUser = ApiAuth::authenticate();
+    
     if (!$authenticatedUser) {
         // Fall back to session auth
         if (Auth::isLoggedIn()) {
@@ -120,6 +122,11 @@ try {
         $organisationalUnits = Person::getOrganisationalUnits($personId);
         $person['organisational_units'] = $organisationalUnits;
         
+        // Add signature URL if signature exists
+        if (!empty($person['signature_path'])) {
+            $person['signature_url'] = url('view-image.php?path=' . urlencode('people/signatures/' . $person['signature_path']));
+        }
+        
         // Remove sensitive data
         unset($person['notes']);
         
@@ -127,15 +134,15 @@ try {
             'success' => true,
             'data' => $person
         ], JSON_PRETTY_PRINT);
-    } else {
-        // List staff with filtering and pagination
-        if (!empty($search)) {
-            $allStaff = Person::searchStaff($organisationId, $search, $activeOnly);
         } else {
-            $allStaff = Person::getStaffByOrganisation($organisationId, $activeOnly);
-        }
-        
-        // Filter by organisational unit if specified
+            // List staff with filtering and pagination
+            if (!empty($search)) {
+                $allStaff = Person::searchStaff($organisationId, $search, $activeOnly);
+            } else {
+                $allStaff = Person::getStaffByOrganisation($organisationId, $activeOnly);
+            }
+            
+            // Filter by organisational unit if specified
         if ($organisationalUnitId) {
             $allStaff = array_filter($allStaff, function($member) use ($organisationalUnitId) {
                 $units = Person::getOrganisationalUnits($member['id']);
@@ -159,6 +166,12 @@ try {
         foreach ($staff as &$member) {
             $units = Person::getOrganisationalUnits($member['id']);
             $member['organisational_units'] = $units;
+            
+            // Add signature URL if signature exists
+            if (!empty($member['signature_path'])) {
+                $member['signature_url'] = url('view-image.php?path=' . urlencode('people/signatures/' . $member['signature_path']));
+            }
+            
             // Remove sensitive data
             unset($member['notes']);
         }

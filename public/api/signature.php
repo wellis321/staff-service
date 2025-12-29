@@ -8,10 +8,56 @@ require_once dirname(__DIR__, 2) . '/config/config.php';
 
 header('Content-Type: application/json');
 
-// Require authentication
-Auth::requireLogin();
+// CORS Configuration - Use whitelist instead of wildcard
+$allowedOrigins = getenv('CORS_ALLOWED_ORIGINS') ? explode(',', getenv('CORS_ALLOWED_ORIGINS')) : [];
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-$organisationId = Auth::getOrganisationId();
+if (empty($allowedOrigins)) {
+    $allowedOrigin = '';
+} elseif (in_array($origin, $allowedOrigins)) {
+    $allowedOrigin = $origin;
+} else {
+    $allowedOrigin = '';
+}
+
+if ($allowedOrigin) {
+    header('Access-Control-Allow-Origin: ' . $allowedOrigin);
+    header('Access-Control-Allow-Credentials: true');
+}
+
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Authorization, X-API-Key, Content-Type');
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// Check authentication - support both session and API key
+require_once SRC_PATH . '/classes/ApiAuth.php';
+$apiKey = ApiAuth::getApiKey();
+
+$organisationId = null;
+$currentUserId = null;
+
+if ($apiKey) {
+    // API key authentication
+    $apiKeyData = ApiAuth::validateApiKey($apiKey);
+    if (!$apiKeyData) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Invalid API key']);
+        exit;
+    }
+    $organisationId = $apiKeyData['organisation_id'];
+    // For API key auth, we don't have a current user ID, so permissions are based on organisation
+} else {
+    // Session-based authentication
+    Auth::requireLogin();
+    $organisationId = Auth::getOrganisationId();
+    $currentUserId = Auth::getUserId();
+}
+
 $response = ['success' => false, 'message' => '', 'data' => null];
 
 try {
@@ -37,11 +83,20 @@ try {
     }
     
     // Check permissions - users can only access their own signature unless they're admin
-    $currentUserId = Auth::getUserId();
-    if ($person['user_id'] != $currentUserId && !RBAC::isOrganisationAdmin() && !RBAC::isSuperAdmin()) {
-        $response['message'] = 'Access denied.';
-        echo json_encode($response);
-        exit;
+    // For API key auth, allow access to any person in the organisation
+    if ($currentUserId !== null) {
+        if ($person['user_id'] != $currentUserId && !RBAC::isOrganisationAdmin() && !RBAC::isSuperAdmin()) {
+            $response['message'] = 'Access denied.';
+            echo json_encode($response);
+            exit;
+        }
+    } else {
+        // API key authentication - verify person belongs to organisation
+        if ($person['organisation_id'] != $organisationId) {
+            $response['message'] = 'Access denied.';
+            echo json_encode($response);
+            exit;
+        }
     }
     
     if ($person['signature_path']) {

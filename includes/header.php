@@ -235,8 +235,19 @@
                                 </div>
                                 <div class="nav-dropdown-menu">
                                     <?php if (RBAC::isSuperAdmin()): ?>
-                                        <a href="<?php echo url('admin/organisation-requests.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'admin/') !== false ? 'active' : ''; ?>">
-                                            <i class="fas fa-shield-alt"></i> Admin
+                                        <a href="<?php echo url('admin/organisation-requests.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'admin/organisation-requests.php') !== false ? 'active' : ''; ?>">
+                                            <i class="fas fa-building"></i> Organisation Requests
+                                        </a>
+                                        <a href="<?php echo url('admin/users.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'admin/users.php') !== false ? 'active' : ''; ?>">
+                                            <i class="fas fa-users-cog"></i> Manage Users
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if (RBAC::isOrganisationAdmin() || RBAC::isSuperAdmin()): ?>
+                                        <a href="<?php echo url('admin/entra-settings.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'admin/entra-settings.php') !== false ? 'active' : ''; ?>">
+                                            <i class="fas fa-cloud"></i> Entra/365 Settings
+                                        </a>
+                                        <a href="<?php echo url('admin/api-keys.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'admin/api-keys.php') !== false ? 'active' : ''; ?>">
+                                            <i class="fas fa-key"></i> API Keys
                                         </a>
                                     <?php endif; ?>
                                     <a href="<?php echo url('staff/index.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'staff/') !== false ? 'active' : ''; ?>">

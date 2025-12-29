@@ -15,8 +15,21 @@ class ApiAuth {
     public static function authenticate() {
         // Try API key authentication first
         $apiKey = self::getApiKey();
+        
         if ($apiKey) {
-            return self::authenticateApiKey($apiKey);
+            $keyData = self::validateApiKey($apiKey);
+            
+            if ($keyData) {
+                // Get full user data
+                $db = getDbConnection();
+                $stmt = $db->prepare("SELECT id, organisation_id, email, first_name, last_name FROM users WHERE id = (SELECT user_id FROM api_keys WHERE id = ?)");
+                $stmt->execute([$keyData['id']]);
+                $user = $stmt->fetch();
+                
+                if ($user) {
+                    return $user;
+                }
+            }
         }
         
         // Fall back to session-based authentication
@@ -46,31 +59,6 @@ class ApiAuth {
         return $headers;
     }
     
-    /**
-     * Get API key from request headers
-     */
-    private static function getApiKey() {
-        // Check Authorization header
-        $headers = self::getAllHeaders();
-        if (isset($headers['Authorization'])) {
-            $auth = $headers['Authorization'];
-            if (preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
-                return $matches[1];
-            }
-            if (preg_match('/ApiKey\s+(.*)$/i', $auth, $matches)) {
-                return $matches[1];
-            }
-        }
-        
-        // Check X-API-Key header
-        if (isset($headers['X-API-Key'])) {
-            return $headers['X-API-Key'];
-        }
-        
-        // Query parameter support removed for security
-        // API keys should only be passed via headers to prevent exposure in URLs, logs, and referrer headers
-        return null;
-    }
     
     /**
      * Authenticate using API key
@@ -119,6 +107,68 @@ class ApiAuth {
     public static function getOrganisationId() {
         $user = self::authenticate();
         return $user['organisation_id'] ?? null;
+    }
+    
+    /**
+     * Get API key from request headers (public method)
+     */
+    public static function getApiKey() {
+        // Check Authorization header
+        $headers = self::getAllHeaders();
+        if (isset($headers['Authorization'])) {
+            $auth = $headers['Authorization'];
+            if (preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
+                return $matches[1];
+            }
+            if (preg_match('/ApiKey\s+(.*)$/i', $auth, $matches)) {
+                return $matches[1];
+            }
+        }
+        
+        // Check X-API-Key header
+        if (isset($headers['X-API-Key'])) {
+            return $headers['X-API-Key'];
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Validate API key and return key data
+     * @param string $apiKey
+     * @return array|false Returns key data with organisation_id on success, false on failure
+     */
+    public static function validateApiKey($apiKey) {
+        $db = getDbConnection();
+        
+        $apiKeyHash = hash('sha256', $apiKey);
+        
+        $stmt = $db->prepare("
+            SELECT ak.*, u.organisation_id
+            FROM api_keys ak
+            JOIN users u ON ak.user_id = u.id
+            WHERE ak.api_key_hash = ? 
+            AND ak.is_active = TRUE
+            AND u.is_active = TRUE
+            AND (ak.expires_at IS NULL OR ak.expires_at > NOW())
+        ");
+        
+        $stmt->execute([$apiKeyHash]);
+        $keyData = $stmt->fetch();
+        
+        if (!$keyData) {
+            return false;
+        }
+        
+        // Update last used timestamp
+        $updateStmt = $db->prepare("UPDATE api_keys SET last_used_at = NOW() WHERE id = ?");
+        $updateStmt->execute([$keyData['id']]);
+        
+        return [
+            'id' => $keyData['id'],
+            'organisation_id' => $keyData['organisation_id'],
+            'name' => $keyData['name'] ?? 'API Key'
+        ];
     }
 }
 

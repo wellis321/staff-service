@@ -165,6 +165,10 @@ include INCLUDES_PATH . '/header.php';
                 <i class="fas fa-rocket"></i>
                 <span>Getting Started</span>
             </a>
+            <a href="#digital-id-workflow" class="docs-sidebar-nav-link">
+                <i class="fas fa-id-card"></i>
+                <span>Digital ID Cards</span>
+            </a>
             <a href="#api-integration" class="docs-sidebar-nav-link">
                 <i class="fas fa-plug"></i>
                 <span>API & MCP Integration</span>
@@ -180,6 +184,10 @@ include INCLUDES_PATH . '/header.php';
             <a href="#data-sync" class="docs-sidebar-nav-link">
                 <i class="fas fa-sync"></i>
                 <span>Data Synchronisation</span>
+            </a>
+            <a href="#entra-integration" class="docs-sidebar-nav-link">
+                <i class="fas fa-microsoft"></i>
+                <span>Microsoft Entra/365 Integration</span>
             </a>
             <a href="#security" class="docs-sidebar-nav-link">
                 <i class="fas fa-shield-alt"></i>
@@ -237,9 +245,133 @@ include INCLUDES_PATH . '/header.php';
             </ul>
         </section>
         
+        <section id="digital-id-workflow" class="docs-section">
+            <h2>Getting Digital ID Cards for Staff Members</h2>
+            <p>After creating a staff member in Staff Service, they need an employee record in Digital ID to get a digital ID card. The process depends on whether Digital ID is integrated with Staff Service.</p>
+            
+            <h3>Setting Up Staff Service Integration</h3>
+            <p>Before you can sync staff from Staff Service to Digital ID, you need to configure the integration:</p>
+            
+            <h4>Step 1: Create API Key in Staff Service</h4>
+            <p><strong>Web Interface (Recommended):</strong></p>
+            <ol>
+                <li>Log in to Staff Service as an organisation administrator</li>
+                <li>Go to <strong>Admin</strong> → <strong>API Keys</strong> (in the Admin dropdown menu)</li>
+                <li>Click <strong>"Create API Key"</strong></li>
+                <li>Enter a descriptive name (e.g., "Digital ID Integration")</li>
+                <li>Click <strong>"Create API Key"</strong></li>
+                <li>Copy the API key immediately - it will only be shown once!</li>
+            </ol>
+            <p><strong>Command Line (Alternative):</strong></p>
+            <ol>
+                <li>Find your User ID and Organisation ID (check your profile URL or database)</li>
+                <li>Run the API key creation script:
+                    <pre><code>php scripts/create-api-key.php &lt;user_id&gt; &lt;organisation_id&gt; "Digital ID Integration"</code></pre>
+                    Example: <code>php scripts/create-api-key.php 3 1 "Digital ID Integration"</code>
+                </li>
+                <li>Save the API key that's displayed - it won't be shown again!</li>
+            </ol>
+            
+            <h4>Step 2: Configure Digital ID Settings</h4>
+            <p><strong>Where to paste the API key:</strong> Copy the API key from Staff Service and configure it in Digital ID's web interface. Each organisation in Digital ID should use their own API key from Staff Service.</p>
+            
+            <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 1rem; margin: 1rem 0; border-radius: 0;">
+                <p style="margin: 0; color: #065f46;"><strong>Important:</strong> Each organisation in Digital ID should use their own unique API key from Staff Service. The API key you create in Staff Service is automatically scoped to your organisation, so when Digital ID uses it, it will only sync staff data from your organisation. This ensures complete data isolation between organisations.</p>
+            </div>
+            
+            <p><strong>Web Interface (Recommended):</strong></p>
+            <ol>
+                <li>Log in to <strong>Digital ID</strong> as an organisation administrator</li>
+                <li>Go to <strong>Admin</strong> → <strong>Organisation</strong> → <strong>Staff Service</strong></li>
+                <li>Check "Enable Staff Service Integration"</li>
+                <li>Enter the <strong>Staff Service URL</strong> (e.g., <code>http://localhost:8000</code>)</li>
+                <li>Paste the <strong>API Key</strong> you copied from Staff Service (this key is unique to your organisation)</li>
+                <li>Click <strong>"Save Settings"</strong></li>
+            </ol>
+            
+            <p><strong>Alternative: .env File</strong> (for server administrators only - not recommended for multi-tenant setups):</p>
+            <p style="color: #6b7280; font-size: 0.9rem;">The <code>.env</code> file approach is only suitable if you're running a single-tenant installation. For multi-tenant setups where multiple organisations use the same Digital ID instance, each organisation should configure their API key through the web interface, which stores it in the database per organisation.</p>
+            <pre><code>USE_STAFF_SERVICE=true
+STAFF_SERVICE_URL=http://localhost:8000
+STAFF_SERVICE_API_KEY=your-api-key-from-staff-service-here
+STAFF_SYNC_INTERVAL=3600</code></pre>
+            <p><strong>Note:</strong> Settings configured via the web interface take precedence over <code>.env</code> file settings. For multi-tenant deployments, always use the web interface so each organisation can have their own API key.</p>
+            
+            <h3>With Staff Service Integration (Recommended)</h3>
+            <p>When Digital ID is configured to use Staff Service as the source of truth:</p>
+            <ol>
+                <li><strong>Automatic Sync</strong>: Go to Digital ID admin panel → <strong>Manage Employees</strong> → Click <strong>"Sync from Staff Service"</strong> button. This will automatically create employee records for all staff members from Staff Service.</li>
+                <li><strong>Manual Creation</strong> (if needed): Go to Digital ID admin panel → <strong>Manage Employees</strong> → Click <strong>"Create New Employee"</strong> → Select the user from dropdown → Enter employee number → System will automatically link to Staff Service if a matching person is found.</li>
+                <li><strong>Upload Photo</strong> (optional): Staff member can upload through their profile, or admin can upload directly.</li>
+                <li><strong>View ID Card</strong>: Staff member logs in and navigates to "Digital ID Card" page - card is automatically generated.</li>
+            </ol>
+            
+            <h3>Without Staff Service Integration (Standalone)</h3>
+            <p>If Digital ID is not integrated with Staff Service:</p>
+            <ol>
+                <li><strong>Create User Account</strong> (if not already created): Staff member registers at Digital ID registration page, or admin creates user account.</li>
+                <li><strong>Create Employee Record</strong>: Go to Digital ID admin panel → <strong>Manage Employees</strong> → Click <strong>"Create New Employee"</strong> → Select user → Enter employee number and display reference → Click "Create Employee".</li>
+                <li><strong>Upload Photo</strong> (optional): Staff member can upload through their profile, or admin can upload/approve photos.</li>
+                <li><strong>View Digital ID Card</strong>: Staff member logs in and navigates to "Digital ID Card" page.</li>
+            </ol>
+            
+            <h3>Important Notes</h3>
+            <ul>
+                <li><strong>Employee Number</strong>: Should match the employee reference from your HR/payroll system. It's used for integration and cannot be changed after creation.</li>
+                <li><strong>User Account</strong>: Staff members need a user account in Digital ID to access their digital ID card. If they don't have one, they can register or an admin can create one.</li>
+                <li><strong>Photo</strong>: Recommended but not required for the digital ID card to be generated.</li>
+                <li><strong>Signature</strong>: If Staff Service integration is enabled and the staff member has a signature in Staff Service, it will automatically appear on their Digital ID card.</li>
+            </ul>
+            
+            <p>For detailed step-by-step instructions, see the <a href="<?php echo url('docs/DIGITAL_ID_WORKFLOW.md'); ?>" target="_blank">Digital ID Workflow Guide</a>.</p>
+        </section>
+        
         <section id="api-integration" class="docs-section">
             <h2>API & MCP Integration</h2>
             <p>The Staff Service provides both REST API and MCP (Model Context Protocol) integration options for connecting with your existing systems.</p>
+            
+            <h3>API Key Management</h3>
+            <p>API keys are used to authenticate external systems and applications that need to access Staff Service data. Organisation administrators can create and manage API keys through the web interface.</p>
+            
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem 0; border-radius: 0;">
+                <h4 style="margin-top: 0; color: #1e40af; font-size: 1rem;">
+                    <i class="fas fa-shield-alt"></i> Organisation-Scoped Security
+                </h4>
+                <p style="margin: 0.5rem 0 0; color: #1e40af;">
+                    <strong>Each organisation has separate API keys that are automatically scoped to their organisation.</strong> When you create an API key in Staff Service, it is automatically linked to your organisation. When that API key is used, it can <strong>only</strong> access data belonging to your organisation - it cannot access data from other organisations. This ensures complete data isolation and security. Multiple organisations can each have their own unique API keys, and each key will only work for that specific organisation's data.
+                </p>
+            </div>
+            
+            <h4>Creating an API Key</h4>
+            <ol>
+                <li>Log in to Staff Service as an organisation administrator</li>
+                <li>Navigate to <strong>Admin</strong> → <strong>API Keys</strong> (in the Admin dropdown menu)</li>
+                <li>Click <strong>"Create API Key"</strong></li>
+                <li>Enter a descriptive name (e.g., "Digital ID Integration", "HR System API")</li>
+                <li>Click <strong>"Create API Key"</strong></li>
+                <li><strong>Copy the API key immediately</strong> - it will only be shown once!</li>
+            </ol>
+            
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; margin: 1rem 0; border-radius: 0;">
+                <p style="margin: 0; color: #92400e;"><strong>Important:</strong> API keys are only displayed once when created. Make sure to copy and store them securely. If you lose an API key, you'll need to create a new one and update all systems using it.</p>
+            </div>
+            
+            <h4>Managing API Keys</h4>
+            <p>From the API Keys management page, you can:</p>
+            <ul>
+                <li>View all API keys for your organisation (you can only see keys created by your organisation)</li>
+                <li>See when each key was created and last used</li>
+                <li>Activate or deactivate keys (deactivated keys cannot be used for authentication)</li>
+                <li>Delete keys that are no longer needed</li>
+            </ul>
+            
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; margin: 1rem 0; border-radius: 0;">
+                <p style="margin: 0; color: #92400e;"><strong>Security Note:</strong> API keys are automatically scoped to your organisation. You can only create and manage API keys for your own organisation, and each key can only access your organisation's data. Other organisations cannot see or use your API keys, and your keys cannot access their data.</p>
+            </div>
+            
+            <h4>Using API Keys</h4>
+            <p>Include the API key in API requests using the <code>Authorization</code> header:</p>
+            <pre><code>Authorization: Bearer YOUR_API_KEY</code></pre>
             
             <h3>REST API</h3>
             <p>Our REST API provides programmatic access to staff data. All API endpoints require authentication using either:</p>
@@ -409,6 +541,88 @@ Authorization: Bearer YOUR_API_KEY</code></pre>
             </ul>
         </section>
         
+        <section id="entra-integration" class="docs-section">
+            <h2>Microsoft Entra/365 Integration</h2>
+            <p>The Staff Service can integrate with Microsoft Entra ID (formerly Azure AD) and Microsoft 365 to synchronise user accounts and staff data, making Staff Service the central hub for identity management across your Microsoft ecosystem.</p>
+            
+            <h3>Setting Up Entra Integration</h3>
+            <p>Organisation administrators can configure Entra integration through the web interface:</p>
+            
+            <h4>Step 1: Register Your Application in Azure AD</h4>
+            <ol>
+                <li>Go to the <a href="https://portal.azure.com" target="_blank">Azure Portal</a></li>
+                <li>Navigate to <strong>Azure Active Directory</strong> → <strong>App registrations</strong></li>
+                <li>Click <strong>"New registration"</strong></li>
+                <li>Enter a name for your application (e.g., "Staff Service Integration")</li>
+                <li>Select supported account types (typically "Accounts in this organizational directory only")</li>
+                <li>Click <strong>"Register"</strong></li>
+            </ol>
+            
+            <h4>Step 2: Configure API Permissions</h4>
+            <p>For staff synchronisation, you need the following permission:</p>
+            <ul>
+                <li><strong>User.Read.All</strong> - Application permission (not delegated) - requires admin consent</li>
+            </ul>
+            <ol>
+                <li>In your app registration, go to <strong>"API permissions"</strong></li>
+                <li>Click <strong>"Add a permission"</strong></li>
+                <li>Select <strong>"Microsoft Graph"</strong></li>
+                <li>Choose <strong>"Application permissions"</strong></li>
+                <li>Search for and select <strong>"User.Read.All"</strong></li>
+                <li>Click <strong>"Add permissions"</strong></li>
+                <li>Click <strong>"Grant admin consent"</strong> (this requires an Azure AD administrator)</li>
+            </ol>
+            
+            <h4>Step 3: Create a Client Secret</h4>
+            <ol>
+                <li>In your app registration, go to <strong>"Certificates & secrets"</strong></li>
+                <li>Click <strong>"New client secret"</strong></li>
+                <li>Enter a description and choose an expiration period</li>
+                <li>Click <strong>"Add"</strong></li>
+                <li><strong>Copy the secret value immediately</strong> - it won't be shown again!</li>
+            </ol>
+            
+            <h4>Step 4: Get Your Tenant ID and Client ID</h4>
+            <ul>
+                <li><strong>Tenant ID</strong>: Found in the "Overview" page of your app registration, or in Azure AD → Overview</li>
+                <li><strong>Client ID (Application ID)</strong>: Found in the "Overview" page of your app registration</li>
+            </ul>
+            
+            <h4>Step 5: Configure in Staff Service</h4>
+            <ol>
+                <li>Log in to Staff Service as an organisation administrator</li>
+                <li>Navigate to <strong>Admin</strong> → <strong>Entra/365 Settings</strong></li>
+                <li>Enter your <strong>Tenant ID</strong> and <strong>Client ID</strong></li>
+                <li>Set the <code>ENTRA_CLIENT_SECRET</code> environment variable with the client secret you created</li>
+                <li>Click <strong>"Enable Entra Integration"</strong></li>
+            </ol>
+            
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem 0; border-radius: 0;">
+                <p style="margin: 0; color: #1e40af;"><strong>Note:</strong> The client secret must be set as an environment variable (<code>ENTRA_CLIENT_SECRET</code>) on your server. Contact your system administrator if you need help with this.</p>
+            </div>
+            
+            <h3>Synchronising Staff from Entra</h3>
+            <p>Once Entra integration is enabled, you can synchronise staff from Microsoft Entra ID:</p>
+            <ol>
+                <li>Go to <strong>Admin</strong> → <strong>Entra/365 Settings</strong></li>
+                <li>Click <strong>"Sync Staff from Microsoft Entra ID"</strong></li>
+                <li>The system will:
+                    <ul>
+                        <li>Fetch all active users from Microsoft Entra ID</li>
+                        <li>Match users by email address</li>
+                        <li>Create new staff records or update existing ones</li>
+                        <li>Map employee IDs from Entra to Staff Service</li>
+                    </ul>
+                </li>
+            </ol>
+            
+            <h3>Integration with Other Applications</h3>
+            <p>When Entra integration is enabled in Staff Service, other applications (like Digital ID) can use Staff Service as the source of truth for Entra-synced staff data. This ensures consistent data across all applications without duplication.</p>
+            
+            <h3>Super Administrator Access</h3>
+            <p>Super administrators can configure Entra integration for any organisation when requested. This is useful for organisations that need assistance with setup or troubleshooting.</p>
+        </section>
+        
         <section id="security" class="docs-section">
             <h2>Security & Privacy</h2>
             <p>The Staff Service is built with security and privacy as top priorities.</p>
@@ -426,6 +640,24 @@ Authorization: Bearer YOUR_API_KEY</code></pre>
                 <li><strong>Organisation Administrators</strong> - Can manage all staff in their organisation</li>
                 <li><strong>Super Administrators</strong> - Can manage organisations and system-wide settings</li>
             </ul>
+            
+            <h4>Managing User Roles</h4>
+            <p>Super administrators can manage user roles and assign organisation administrator privileges:</p>
+            <ol>
+                <li>Log in as a super administrator</li>
+                <li>Navigate to <strong>Admin</strong> → <strong>Users</strong></li>
+                <li>Select an organisation from the dropdown (optional - leave blank to see all users)</li>
+                <li>For each user, you can:
+                    <ul>
+                        <li><strong>Make Admin</strong> - Assign organisation administrator role to a user</li>
+                        <li><strong>Remove Admin</strong> - Remove organisation administrator role from a user</li>
+                    </ul>
+                </li>
+            </ol>
+            
+            <div style="background-color: #f0f9ff; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem 0; border-radius: 0;">
+                <p style="margin: 0; color: #1e40af;"><strong>Note:</strong> Organisation administrators have full access to manage staff, job descriptions, and organisational units within their organisation. They cannot access other organisations' data. Super administrators can access all organisations and manage organisation admins.</p>
+            </div>
             
             <h3>Data Protection</h3>
             <p>The Staff Service is designed to comply with GDPR and UK data protection regulations:</p>

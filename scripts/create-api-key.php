@@ -66,9 +66,10 @@ try {
     echo "Use this key in your API requests:\n";
     echo "  Authorization: Bearer {$apiKey}\n";
     echo "\n";
+    $appUrl = defined('APP_URL') ? APP_URL : 'http://localhost:8000';
     echo "Example curl command:\n";
     echo "  curl -H 'Authorization: Bearer {$apiKey}' \\\n";
-    echo "       {$staffServiceUrl}/api/staff-data.php\n";
+    echo "       {$appUrl}/api/staff-data.php\n";
     echo "\n";
     
 } catch (Exception $e) {
