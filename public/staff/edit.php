@@ -1,21 +1,42 @@
 <?php
+// Enable error reporting for debugging (remove in production)
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display, but log
+ini_set('log_errors', 1);
+
 // #region agent log
 $logFile = dirname(__DIR__, 2) . '/.cursor/debug.log';
 $logEntry = function($location, $message, $data = [], $hypothesisId = 'A') use ($logFile) {
-    $entry = json_encode([
-        'sessionId' => 'debug-session',
-        'runId' => 'run1',
-        'hypothesisId' => $hypothesisId,
-        'location' => $location,
-        'message' => $message,
-        'data' => $data,
-        'timestamp' => time() * 1000
-    ]) . "\n";
-    file_put_contents($logFile, $entry, FILE_APPEND);
+    try {
+        $entry = json_encode([
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => $hypothesisId,
+            'location' => $location,
+            'message' => $message,
+            'data' => $data,
+            'timestamp' => time() * 1000
+        ]) . "\n";
+        @file_put_contents($logFile, $entry, FILE_APPEND);
+    } catch (Exception $e) {
+        // Silently fail logging
+    }
 };
 // #endregion
 
-require_once dirname(__DIR__, 2) . '/config/config.php';
+try {
+    require_once dirname(__DIR__, 2) . '/config/config.php';
+    // #region agent log
+    $logEntry('edit.php:28', 'Config file loaded successfully');
+    // #endregion
+} catch (Exception $e) {
+    // #region agent log
+    $logEntry('edit.php:28', 'Config file load failed', ['error' => $e->getMessage()], 'A');
+    // #endregion
+    error_log("Fatal error loading config: " . $e->getMessage());
+    http_response_code(500);
+    die("Configuration error. Please contact the administrator.");
+}
 
 // #region agent log
 $logEntry('edit.php:3', 'Config loaded, starting authentication');
@@ -140,15 +161,37 @@ try {
 }
 
 try {
-    $allUnits = OrganisationalUnits::getAllByOrganisation($organisationId);
-    // #region agent log
-    $logEntry('edit.php:75', 'OrganisationalUnits::getAllByOrganisation() completed', ['count' => is_array($allUnits) ? count($allUnits) : 'not_array']);
-    // #endregion
+    // Check if OrganisationalUnits class exists and has the method
+    if (class_exists('OrganisationalUnits') && method_exists('OrganisationalUnits', 'getAllByOrganisation')) {
+        $allUnits = OrganisationalUnits::getAllByOrganisation($organisationId);
+        // #region agent log
+        $logEntry('edit.php:75', 'OrganisationalUnits::getAllByOrganisation() completed', ['count' => is_array($allUnits) ? count($allUnits) : 'not_array']);
+        // #endregion
+    } else {
+        // Fallback: query organisational_units directly
+        // #region agent log
+        $logEntry('edit.php:75', 'OrganisationalUnits class/method not found, using fallback query', [], 'G');
+        // #endregion
+        $db = getDbConnection();
+        $stmt = $db->prepare("
+            SELECT id, name, code 
+            FROM organisational_units 
+            WHERE organisation_id = ? 
+            ORDER BY name
+        ");
+        $stmt->execute([$organisationId]);
+        $allUnits = $stmt->fetchAll();
+        // #region agent log
+        $logEntry('edit.php:89', 'Fallback query completed', ['count' => count($allUnits)]);
+        // #endregion
+    }
 } catch (Exception $e) {
     // #region agent log
     $logEntry('edit.php:75', 'OrganisationalUnits::getAllByOrganisation() failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()], 'G');
     // #endregion
-    throw $e;
+    // Use empty array as fallback instead of throwing
+    $allUnits = [];
+    error_log("Error getting organisational units: " . $e->getMessage());
 }
 
 // Get active job descriptions for selection
