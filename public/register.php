@@ -1,5 +1,20 @@
 <?php
-require_once dirname(__DIR__) . '/config/config.php';
+/**
+ * Registration Page
+ * Handles user registration for new organisations
+ */
+
+// Enable error display temporarily to catch any issues
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+
+// Wrap everything in try-catch to catch fatal errors
+try {
+    require_once dirname(__DIR__) . '/config/config.php';
+} catch (Throwable $e) {
+    die("Fatal error loading config: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+}
 
 // Redirect if already logged in
 if (Auth::isLoggedIn()) {
@@ -11,130 +26,140 @@ $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!CSRF::validatePost()) {
-        $error = 'Invalid security token. Please try again.';
-    } else {
-        // Rate limiting: 3 attempts per hour per IP (if RateLimiter is available)
-        $rateLimitAllowed = true;
-        if (class_exists('RateLimiter')) {
-            try {
-                $ip = RateLimiter::getClientIp();
-                $rateLimit = RateLimiter::check($ip . ':register', 3, 3600); // 1 hour = 3600 seconds
-                $rateLimitAllowed = $rateLimit['allowed'] ?? true;
-                
-                if (!$rateLimitAllowed) {
-                    $resetTime = date('H:i:s', $rateLimit['reset_at'] ?? time() + 3600);
-                    $error = "Too many registration attempts. Please try again after $resetTime.";
-                }
-            } catch (Exception $e) {
-                // If rate limiting fails, allow the request but log the error
-                error_log("Rate limiting error: " . $e->getMessage());
-                $rateLimitAllowed = true;
-            }
-        }
-        
-        if ($rateLimitAllowed) {
-            $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $confirmPassword = $_POST['confirm_password'] ?? '';
-        $firstName = trim($_POST['first_name'] ?? '');
-        $lastName = trim($_POST['last_name'] ?? '');
-        $organisationDomain = trim($_POST['organisation_domain'] ?? '');
-        
-        // Validation
-        if (empty($email) || empty($password) || empty($firstName) || empty($lastName)) {
-            $error = 'All fields are required.';
-        } elseif ($password !== $confirmPassword) {
-            $error = 'Passwords do not match.';
-        } elseif (strlen($password) < PASSWORD_MIN_LENGTH) {
-            $error = 'Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters long.';
+    try {
+        if (!CSRF::validatePost()) {
+            $error = 'Invalid security token. Please try again.';
         } else {
-            // Find or create organisation by domain
-            $db = getDbConnection();
-            $stmt = $db->prepare("SELECT id, seats_allocated FROM organisations WHERE domain = ?");
-            $stmt->execute([$organisationDomain]);
-            $organisation = $stmt->fetch();
-            
-            if (!$organisation) {
-                // Create organisation with default seats for local development
-                // Set a high number (1000) to avoid seat limits during development
-                $defaultSeats = 1000;
-                $stmt = $db->prepare("INSERT INTO organisations (name, domain, seats_allocated) VALUES (?, ?, ?)");
-                $stmt->execute([$organisationDomain, $organisationDomain, $defaultSeats]);
-                $organisationId = $db->lastInsertId();
-            } else {
-                $organisationId = $organisation['id'];
-                // If organisation exists but has 0 seats, update it to allow registration
-                if ($organisation['seats_allocated'] == 0) {
-                    $defaultSeats = 1000;
-                    $stmt = $db->prepare("UPDATE organisations SET seats_allocated = ? WHERE id = ?");
-                    $stmt->execute([$defaultSeats, $organisationId]);
-                }
-            }
-            
-            // Register user - Auth::register expects domain string, not organisation ID
-            $result = Auth::register($email, $password, $firstName, $lastName, $organisationDomain);
-            
-            if (is_array($result) && isset($result['success']) && $result['success'] === true) {
-                // After successful registration, auto-create a staff profile for local development
+            // Rate limiting: 3 attempts per hour per IP (if RateLimiter is available)
+            $rateLimitAllowed = true;
+            if (class_exists('RateLimiter')) {
                 try {
-                    // Get the newly created user ID
-                    $stmt = $db->prepare("SELECT id FROM users WHERE email = ? AND organisation_id = ?");
-                    $stmt->execute([$email, $organisationId]);
-                    $newUser = $stmt->fetch();
+                    $ip = RateLimiter::getClientIp();
+                    $rateLimit = RateLimiter::check($ip . ':register', 3, 3600); // 1 hour = 3600 seconds
+                    $rateLimitAllowed = $rateLimit['allowed'] ?? true;
                     
-                    if ($newUser) {
-                        // Check if staff profile already exists
-                        $stmt = $db->prepare("SELECT id FROM people WHERE user_id = ?");
-                        $stmt->execute([$newUser['id']]);
-                        $existingProfile = $stmt->fetch();
-                        
-                        if (!$existingProfile) {
-                            // Create a basic staff profile
-                            $staffData = [
-                                'organisation_id' => $organisationId,
-                                'user_id' => $newUser['id'],
-                                'first_name' => $firstName,
-                                'last_name' => $lastName,
-                                'email' => $email,
-                                'is_active' => true
-                            ];
-                            
-                            $person = Person::createStaff($staffData);
-                            if (!$person) {
-                                error_log("Failed to auto-create staff profile for user: $email");
-                            }
-                        }
+                    if (!$rateLimitAllowed) {
+                        $resetTime = date('H:i:s', $rateLimit['reset_at'] ?? time() + 3600);
+                        $error = "Too many registration attempts. Please try again after $resetTime.";
                     }
                 } catch (Exception $e) {
-                    // Log error but don't fail registration - profile can be created later
-                    error_log("Error auto-creating staff profile: " . $e->getMessage());
+                    // If rate limiting fails, allow the request but log the error
+                    error_log("Rate limiting error: " . $e->getMessage());
+                    $rateLimitAllowed = true;
                 }
+            }
+            
+            if ($rateLimitAllowed) {
+                $email = trim($_POST['email'] ?? '');
+                $password = $_POST['password'] ?? '';
+                $confirmPassword = $_POST['confirm_password'] ?? '';
+                $firstName = trim($_POST['first_name'] ?? '');
+                $lastName = trim($_POST['last_name'] ?? '');
+                $organisationDomain = trim($_POST['organisation_domain'] ?? '');
                 
-                // Reset rate limit on successful registration (if RateLimiter is available)
-                if (class_exists('RateLimiter') && isset($ip)) {
-                    try {
-                        RateLimiter::reset($ip . ':register');
-                    } catch (Exception $e) {
-                        error_log("Rate limit reset error: " . $e->getMessage());
+                // Validation
+                if (empty($email) || empty($password) || empty($firstName) || empty($lastName)) {
+                    $error = 'All fields are required.';
+                } elseif ($password !== $confirmPassword) {
+                    $error = 'Passwords do not match.';
+                } elseif (strlen($password) < PASSWORD_MIN_LENGTH) {
+                    $error = 'Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters long.';
+                } else {
+                    // Find or create organisation by domain
+                    $db = getDbConnection();
+                    $stmt = $db->prepare("SELECT id, seats_allocated FROM organisations WHERE domain = ?");
+                    $stmt->execute([$organisationDomain]);
+                    $organisation = $stmt->fetch();
+                    
+                    if (!$organisation) {
+                        // Create organisation with default seats for local development
+                        // Set a high number (1000) to avoid seat limits during development
+                        $defaultSeats = 1000;
+                        $stmt = $db->prepare("INSERT INTO organisations (name, domain, seats_allocated) VALUES (?, ?, ?)");
+                        $stmt->execute([$organisationDomain, $organisationDomain, $defaultSeats]);
+                        $organisationId = $db->lastInsertId();
+                    } else {
+                        $organisationId = $organisation['id'];
+                        // If organisation exists but has 0 seats, update it to allow registration
+                        if ($organisation['seats_allocated'] == 0) {
+                            $defaultSeats = 1000;
+                            $stmt = $db->prepare("UPDATE organisations SET seats_allocated = ? WHERE id = ?");
+                            $stmt->execute([$defaultSeats, $organisationId]);
+                        }
+                    }
+                    
+                    // Register user - Auth::register expects domain string, not organisation ID
+                    $result = Auth::register($email, $password, $firstName, $lastName, $organisationDomain);
+                    
+                    if (is_array($result) && isset($result['success']) && $result['success'] === true) {
+                        // After successful registration, auto-create a staff profile for local development
+                        try {
+                            // Get the newly created user ID
+                            $stmt = $db->prepare("SELECT id FROM users WHERE email = ? AND organisation_id = ?");
+                            $stmt->execute([$email, $organisationId]);
+                            $newUser = $stmt->fetch();
+                            
+                            if ($newUser) {
+                                // Check if staff profile already exists
+                                $stmt = $db->prepare("SELECT id FROM people WHERE user_id = ?");
+                                $stmt->execute([$newUser['id']]);
+                                $existingProfile = $stmt->fetch();
+                                
+                                if (!$existingProfile) {
+                                    // Create a basic staff profile
+                                    $staffData = [
+                                        'organisation_id' => $organisationId,
+                                        'user_id' => $newUser['id'],
+                                        'first_name' => $firstName,
+                                        'last_name' => $lastName,
+                                        'email' => $email,
+                                        'is_active' => true
+                                    ];
+                                    
+                                    $person = Person::createStaff($staffData);
+                                    if (!$person) {
+                                        error_log("Failed to auto-create staff profile for user: $email");
+                                    }
+                                }
+                            }
+                        } catch (Exception $e) {
+                            // Log error but don't fail registration - profile can be created later
+                            error_log("Error auto-creating staff profile: " . $e->getMessage());
+                        }
+                        
+                        // Reset rate limit on successful registration (if RateLimiter is available)
+                        if (class_exists('RateLimiter') && isset($ip)) {
+                            try {
+                                RateLimiter::reset($ip . ':register');
+                            } catch (Exception $e) {
+                                error_log("Rate limit reset error: " . $e->getMessage());
+                            }
+                        }
+                        
+                        // Regenerate session ID to prevent session fixation attacks
+                        session_regenerate_id(true);
+                        
+                        $success = $result['message'] ?? 'Registration successful! Please check your email to verify your account.';
+                    } elseif (is_array($result) && isset($result['success']) && $result['success'] === false) {
+                        $error = $result['message'] ?? 'Registration failed. Please try again.';
+                    } else {
+                        $error = 'Registration failed. Please try again.';
                     }
                 }
-                
-                // Regenerate session ID to prevent session fixation attacks
-                session_regenerate_id(true);
-                
-                $success = $result['message'] ?? 'Registration successful! Please check your email to verify your account.';
-            } elseif (is_array($result) && isset($result['success']) && $result['success'] === false) {
-                $error = $result['message'] ?? 'Registration failed. Please try again.';
-            } else {
-                $error = 'Registration failed. Please try again.';
             }
         }
+    } catch (Throwable $e) {
+        error_log("Registration error: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+        $error = 'An error occurred during registration. Please try again.';
     }
 }
 
-$pageTitle = 'Register';
-include INCLUDES_PATH . '/header.php';
+try {
+    $pageTitle = 'Register';
+    include INCLUDES_PATH . '/header.php';
+} catch (Throwable $e) {
+    die("Fatal error loading header: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+}
 ?>
 
 <div class="card">
@@ -191,5 +216,10 @@ include INCLUDES_PATH . '/header.php';
     </p>
 </div>
 
-<?php include INCLUDES_PATH . '/footer.php'; ?>
-
+<?php 
+try {
+    include INCLUDES_PATH . '/footer.php';
+} catch (Throwable $e) {
+    die("Fatal error loading footer: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+}
+?>
