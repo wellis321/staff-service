@@ -2,10 +2,16 @@
 require_once dirname(__DIR__, 2) . '/config/config.php';
 
 Auth::requireLogin();
-RBAC::requireOrganisationAdmin();
+
+// Allow both organisation admins and super admins
+if (!RBAC::isOrganisationAdmin() && !RBAC::isSuperAdmin()) {
+    header('Location: ' . url('index.php'));
+    exit;
+}
 
 $organisationId = Auth::getOrganisationId();
 $userId = Auth::getUserId();
+$isSuperAdmin = RBAC::isSuperAdmin();
 $error = '';
 $success = '';
 $newApiKey = null;
@@ -22,9 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($action === 'create') {
             $keyName = trim($_POST['key_name'] ?? '');
+            $targetOrganisationId = $isSuperAdmin && isset($_POST['organisation_id']) ? (int)$_POST['organisation_id'] : $organisationId;
             
             if (empty($keyName)) {
                 $error = 'API key name is required.';
+            } elseif (!$targetOrganisationId && !$isSuperAdmin) {
+                $error = 'Organisation not found. Please contact your administrator.';
             } else {
                 // Generate API key
                 $apiKey = bin2hex(random_bytes(32)); // 64-character hex string
@@ -36,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             user_id, organisation_id, name, api_key_hash, is_active
                         ) VALUES (?, ?, ?, ?, TRUE)
                     ");
-                    $stmt->execute([$userId, $organisationId, $keyName, $apiKeyHash]);
+                    $stmt->execute([$userId, $targetOrganisationId, $keyName, $apiKeyHash]);
                     
                     $newApiKey = $apiKey;
                     $newApiKeyName = $keyName;
@@ -50,12 +59,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $isActive = isset($_POST['is_active']) && $_POST['is_active'] === '1';
             
             if ($keyId > 0) {
-                $stmt = $db->prepare("
-                    UPDATE api_keys 
-                    SET is_active = ? 
-                    WHERE id = ? AND organisation_id = ?
-                ");
-                $stmt->execute([$isActive ? 1 : 0, $keyId, $organisationId]);
+                // Super admins can toggle any key, organisation admins only their own
+                if ($isSuperAdmin) {
+                    $stmt = $db->prepare("
+                        UPDATE api_keys 
+                        SET is_active = ? 
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([$isActive ? 1 : 0, $keyId]);
+                } else {
+                    $stmt = $db->prepare("
+                        UPDATE api_keys 
+                        SET is_active = ? 
+                        WHERE id = ? AND organisation_id = ?
+                    ");
+                    $stmt->execute([$isActive ? 1 : 0, $keyId, $organisationId]);
+                }
                 
                 if ($stmt->rowCount() > 0) {
                     $success = 'API key ' . ($isActive ? 'activated' : 'deactivated') . ' successfully.';
@@ -69,11 +88,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $keyId = (int)($_POST['key_id'] ?? 0);
             
             if ($keyId > 0) {
-                $stmt = $db->prepare("
-                    DELETE FROM api_keys 
-                    WHERE id = ? AND organisation_id = ?
-                ");
-                $stmt->execute([$keyId, $organisationId]);
+                // Super admins can delete any key, organisation admins only their own
+                if ($isSuperAdmin) {
+                    $stmt = $db->prepare("
+                        DELETE FROM api_keys 
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([$keyId]);
+                } else {
+                    $stmt = $db->prepare("
+                        DELETE FROM api_keys 
+                        WHERE id = ? AND organisation_id = ?
+                    ");
+                    $stmt->execute([$keyId, $organisationId]);
+                }
                 
                 if ($stmt->rowCount() > 0) {
                     $success = 'API key deleted successfully.';
@@ -87,16 +115,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get all API keys for this organisation
-$stmt = $db->prepare("
-    SELECT ak.id, ak.name, ak.is_active, ak.created_at, ak.last_used_at, ak.expires_at,
-           u.email as user_email
-    FROM api_keys ak
-    JOIN users u ON ak.user_id = u.id
-    WHERE ak.organisation_id = ?
-    ORDER BY ak.created_at DESC
-");
-$stmt->execute([$organisationId]);
+// Get all API keys (for super admin, show all; for org admin, show only their organisation's)
+if ($isSuperAdmin) {
+    $stmt = $db->prepare("
+        SELECT ak.id, ak.name, ak.is_active, ak.created_at, ak.last_used_at, ak.expires_at,
+               u.email as user_email, o.name as organisation_name, o.domain as organisation_domain
+        FROM api_keys ak
+        JOIN users u ON ak.user_id = u.id
+        LEFT JOIN organisations o ON ak.organisation_id = o.id
+        ORDER BY ak.created_at DESC
+    ");
+    $stmt->execute();
+} else {
+    $stmt = $db->prepare("
+        SELECT ak.id, ak.name, ak.is_active, ak.created_at, ak.last_used_at, ak.expires_at,
+               u.email as user_email
+        FROM api_keys ak
+        JOIN users u ON ak.user_id = u.id
+        WHERE ak.organisation_id = ?
+        ORDER BY ak.created_at DESC
+    ");
+    $stmt->execute([$organisationId]);
+}
 $apiKeys = $stmt->fetchAll();
 
 $pageTitle = 'API Keys';
@@ -166,6 +206,31 @@ STAFF_SYNC_INTERVAL=3600</code></pre>
             <?php echo CSRF::tokenField(); ?>
             <input type="hidden" name="action" value="create">
             
+            <?php if ($isSuperAdmin): ?>
+                <div class="form-group">
+                    <label for="organisation_id">Organisation</label>
+                    <select id="organisation_id" name="organisation_id" required>
+                        <option value="">Select an organisation...</option>
+                        <?php
+                        $orgStmt = $db->query("SELECT id, name, domain FROM organisations ORDER BY name");
+                        $organisations = $orgStmt->fetchAll();
+                        foreach ($organisations as $org):
+                        ?>
+                            <option value="<?php echo $org['id']; ?>">
+                                <?php echo htmlspecialchars($org['name'] . ' (' . $org['domain'] . ')'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small>Select the organisation this API key will be associated with.</small>
+                </div>
+            <?php else: ?>
+                <?php if (!$organisationId): ?>
+                    <div class="alert alert-error">
+                        Organisation not found. Please contact your administrator.
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
+            
             <div class="form-group">
                 <label for="key_name">API Key Name</label>
                 <input type="text" 
@@ -177,7 +242,7 @@ STAFF_SYNC_INTERVAL=3600</code></pre>
                 <small>Give this API key a descriptive name to identify what it's used for.</small>
             </div>
             
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" <?php echo (!$organisationId && !$isSuperAdmin) ? 'disabled' : ''; ?>>
                 <i class="fas fa-key"></i> Create API Key
             </button>
         </form>
@@ -194,6 +259,9 @@ STAFF_SYNC_INTERVAL=3600</code></pre>
                     <thead>
                         <tr style="border-bottom: 2px solid #e5e7eb; background: #f9fafb;">
                             <th style="padding: 0.75rem; text-align: left;">Name</th>
+                            <?php if ($isSuperAdmin): ?>
+                                <th style="padding: 0.75rem; text-align: left;">Organisation</th>
+                            <?php endif; ?>
                             <th style="padding: 0.75rem; text-align: left;">Created By</th>
                             <th style="padding: 0.75rem; text-align: left;">Status</th>
                             <th style="padding: 0.75rem; text-align: left;">Created</th>
@@ -208,6 +276,20 @@ STAFF_SYNC_INTERVAL=3600</code></pre>
                                 <td style="padding: 0.75rem;">
                                     <strong><?php echo htmlspecialchars($key['name']); ?></strong>
                                 </td>
+                                <?php if ($isSuperAdmin): ?>
+                                    <td style="padding: 0.75rem; color: #6b7280;">
+                                        <?php 
+                                        if (!empty($key['organisation_name'])) {
+                                            echo htmlspecialchars($key['organisation_name']);
+                                            if (!empty($key['organisation_domain'])) {
+                                                echo ' <small style="color: #9ca3af;">(' . htmlspecialchars($key['organisation_domain']) . ')</small>';
+                                            }
+                                        } else {
+                                            echo '<span style="color: #9ca3af;">No organisation</span>';
+                                        }
+                                        ?>
+                                    </td>
+                                <?php endif; ?>
                                 <td style="padding: 0.75rem; color: #6b7280;">
                                     <?php echo htmlspecialchars($key['user_email']); ?>
                                 </td>
@@ -248,6 +330,19 @@ STAFF_SYNC_INTERVAL=3600</code></pre>
                                 </td>
                                 <td style="padding: 0.75rem;">
                                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                        <?php
+                                        // Only show actions if super admin or if key belongs to user's organisation
+                                        $canManage = $isSuperAdmin;
+                                        if (!$canManage && $organisationId) {
+                                            // For org admins, check if key belongs to their org
+                                            $keyOrgStmt = $db->prepare("SELECT organisation_id FROM api_keys WHERE id = ?");
+                                            $keyOrgStmt->execute([$key['id']]);
+                                            $keyOrg = $keyOrgStmt->fetch();
+                                            $canManage = ($keyOrg && $keyOrg['organisation_id'] == $organisationId);
+                                        }
+                                        
+                                        if ($canManage):
+                                        ?>
                                         <form method="POST" action="" style="margin: 0;">
                                             <?php echo CSRF::tokenField(); ?>
                                             <input type="hidden" name="action" value="toggle">
@@ -272,6 +367,9 @@ STAFF_SYNC_INTERVAL=3600</code></pre>
                                                 <i class="fas fa-trash"></i> Delete
                                             </button>
                                         </form>
+                                        <?php else: ?>
+                                            <span style="color: #9ca3af; font-size: 0.875rem;">No access</span>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>

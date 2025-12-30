@@ -8,8 +8,21 @@ $userId = Auth::getUserId();
 $error = '';
 $success = '';
 
-// Get person record
-$person = Person::findByUserId($userId, $organisationId);
+// Super admins don't have staff profiles - redirect to index
+if (RBAC::isSuperAdmin()) {
+    header('Location: ' . url('index.php'));
+    exit;
+}
+
+// Get person record (only if user has an organisation)
+$person = null;
+if ($organisationId) {
+    try {
+        $person = Person::findByUserId($userId, $organisationId);
+    } catch (Exception $e) {
+        error_log("Error finding person record: " . $e->getMessage());
+    }
+}
 
 if (!$person) {
     header('Location: ' . url('index.php'));
