@@ -6,41 +6,70 @@ $pageTitle = 'Home';
 // Require login
 Auth::requireLogin();
 
-$organisationId = Auth::getOrganisationId();
-$userId = Auth::getUserId();
-
-// Get current user data
-$user = Auth::getUser();
+try {
+    $organisationId = Auth::getOrganisationId();
+    $userId = Auth::getUserId();
+    
+    // Get current user data
+    $user = Auth::getUser();
+    
+    if (!$user) {
+        throw new Exception("Unable to retrieve user data. Please try logging in again.");
+    }
+} catch (Exception $e) {
+    error_log("Index.php error: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+    // Redirect to login if there's an error
+    header('Location: ' . url('login.php') . '?error=' . urlencode('Session error. Please log in again.'));
+    exit;
+}
 
 // Handle profile creation request
+$error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_profile']) && CSRF::validatePost()) {
-    // Check if profile already exists
-    $person = Person::findByUserId($userId, $organisationId);
-    
-    if (!$person) {
-        // Create a basic staff profile for the user
-        $staffData = [
-            'organisation_id' => $organisationId,
-            'user_id' => $userId,
-            'first_name' => $user['first_name'],
-            'last_name' => $user['last_name'],
-            'email' => $user['email'],
-            'is_active' => true
-        ];
-        
-        $person = Person::createStaff($staffData);
-        
-        if ($person) {
-            header('Location: ' . url('index.php') . '?profile_created=1');
-            exit;
-        } else {
-            $error = 'Failed to create profile. Please try again or contact your administrator.';
+    if (!$organisationId) {
+        $error = 'Organisation not found. Please contact your administrator.';
+    } else {
+        try {
+            // Check if profile already exists
+            $person = Person::findByUserId($userId, $organisationId);
+            
+            if (!$person) {
+                // Create a basic staff profile for the user
+                $staffData = [
+                    'organisation_id' => $organisationId,
+                    'user_id' => $userId,
+                    'first_name' => $user['first_name'],
+                    'last_name' => $user['last_name'],
+                    'email' => $user['email'],
+                    'is_active' => true
+                ];
+                
+                $person = Person::createStaff($staffData);
+                
+                if ($person) {
+                    header('Location: ' . url('index.php') . '?profile_created=1');
+                    exit;
+                } else {
+                    $error = 'Failed to create profile. Please try again or contact your administrator.';
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Error creating profile: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+            $error = 'An error occurred while creating your profile. Please try again.';
         }
     }
 }
 
-// Get current user's person record
-$person = Person::findByUserId($userId, $organisationId);
+// Get current user's person record (only if organisationId is set)
+$person = null;
+if ($organisationId) {
+    try {
+        $person = Person::findByUserId($userId, $organisationId);
+    } catch (Exception $e) {
+        error_log("Error finding person record: " . $e->getMessage());
+        // Continue without person record - user can create profile
+    }
+}
 
 include INCLUDES_PATH . '/header.php';
 ?>
@@ -89,14 +118,29 @@ include INCLUDES_PATH . '/header.php';
         </div>
     <?php endif; ?>
     
-    <?php if (RBAC::isOrganisationAdmin() || RBAC::isSuperAdmin()): ?>
+    <?php 
+    try {
+        if (RBAC::isOrganisationAdmin() || RBAC::isSuperAdmin()): 
+    ?>
         <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
             <h2>Administration</h2>
-            <a href="<?php echo url('staff/index.php'); ?>" class="btn btn-primary">
-                <i class="fas fa-users"></i> Manage Staff
-            </a>
+            <?php if ($organisationId): ?>
+                <a href="<?php echo url('staff/index.php'); ?>" class="btn btn-primary">
+                    <i class="fas fa-users"></i> Manage Staff
+                </a>
+            <?php endif; ?>
+            <?php if (RBAC::isSuperAdmin()): ?>
+                <a href="<?php echo url('admin/users.php'); ?>" class="btn btn-primary" style="margin-left: 0.5rem;">
+                    <i class="fas fa-users-cog"></i> Manage Users
+                </a>
+            <?php endif; ?>
         </div>
-    <?php endif; ?>
+    <?php 
+        endif;
+    } catch (Exception $e) {
+        error_log("Error checking admin status: " . $e->getMessage());
+    }
+    ?>
 </div>
 
 <?php include INCLUDES_PATH . '/footer.php'; ?>
