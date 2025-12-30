@@ -5,7 +5,9 @@
  */
 
 // Error reporting (environment-based)
-$isProduction = getenv('APP_ENV') === 'production' || getenv('APP_ENV') === 'prod';
+// Load environment variables first to ensure APP_ENV is available
+require_once __DIR__ . '/env_loader.php';
+$isProduction = (getenv('APP_ENV') === 'production' || getenv('APP_ENV') === 'prod');
 if ($isProduction) {
     error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT);
     ini_set('display_errors', 0);
@@ -33,8 +35,7 @@ define('PUBLIC_PATH', ROOT_PATH . '/public');
 define('ASSETS_PATH', PUBLIC_PATH . '/assets');
 define('UPLOADS_PATH', ROOT_PATH . '/uploads');
 
-// Load environment variables
-require_once __DIR__ . '/env_loader.php';
+// Environment variables already loaded above
 
 // Application settings (from .env or defaults)
 define('APP_NAME', getenv('APP_NAME') ?: 'People Management');
