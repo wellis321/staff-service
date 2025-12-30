@@ -26,34 +26,58 @@ try {
 // Handle profile creation request
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_profile']) && CSRF::validatePost()) {
+    // #region agent log
+    file_put_contents('/Users/wellis/Desktop/Cursor/people-management-service/.cursor/debug.log', json_encode(['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'index.php:28', 'message' => 'Profile creation POST received', 'data' => ['organisationId' => $organisationId, 'userId' => $userId, 'userKeys' => array_keys($user ?? []), 'hasFirstName' => isset($user['first_name']), 'hasLastName' => isset($user['last_name']), 'hasEmail' => isset($user['email'])]], JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
+    // #endregion
     if (!$organisationId) {
+        // #region agent log
+        file_put_contents('/Users/wellis/Desktop/Cursor/people-management-service/.cursor/debug.log', json_encode(['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'D', 'location' => 'index.php:30', 'message' => 'Organisation ID is null', 'data' => ['organisationId' => $organisationId]], JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
+        // #endregion
         $error = 'Organisation not found. Please contact your administrator.';
     } else {
         try {
             // Check if profile already exists
             $person = Person::findByUserId($userId, $organisationId);
             
+            // #region agent log
+            file_put_contents('/Users/wellis/Desktop/Cursor/people-management-service/.cursor/debug.log', json_encode(['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'index.php:35', 'message' => 'Existing profile check result', 'data' => ['personExists' => !empty($person), 'personId' => $person['id'] ?? null]], JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
+            // #endregion
+            
             if (!$person) {
                 // Create a basic staff profile for the user
                 $staffData = [
                     'organisation_id' => $organisationId,
                     'user_id' => $userId,
-                    'first_name' => $user['first_name'],
-                    'last_name' => $user['last_name'],
-                    'email' => $user['email'],
+                    'first_name' => $user['first_name'] ?? null,
+                    'last_name' => $user['last_name'] ?? null,
+                    'email' => $user['email'] ?? null,
                     'is_active' => true
                 ];
                 
+                // #region agent log
+                file_put_contents('/Users/wellis/Desktop/Cursor/people-management-service/.cursor/debug.log', json_encode(['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'index.php:46', 'message' => 'Before createStaff call', 'data' => ['staffData' => $staffData, 'hasFirstName' => !empty($staffData['first_name']), 'hasLastName' => !empty($staffData['last_name']), 'hasEmail' => !empty($staffData['email']), 'organisationId' => $staffData['organisation_id'], 'userId' => $staffData['user_id']]], JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
+                // #endregion
+                
                 $person = Person::createStaff($staffData);
+                
+                // #region agent log
+                file_put_contents('/Users/wellis/Desktop/Cursor/people-management-service/.cursor/debug.log', json_encode(['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'index.php:48', 'message' => 'After createStaff call', 'data' => ['personCreated' => !empty($person), 'personId' => $person['id'] ?? null, 'personType' => $person['person_type'] ?? null]], JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
+                // #endregion
                 
                 if ($person) {
                     header('Location: ' . url('index.php') . '?profile_created=1');
                     exit;
                 } else {
+                    // #region agent log
+                    file_put_contents('/Users/wellis/Desktop/Cursor/people-management-service/.cursor/debug.log', json_encode(['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'B', 'location' => 'index.php:53', 'message' => 'createStaff returned null', 'data' => ['staffData' => $staffData]], JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
+                    // #endregion
                     $error = 'Failed to create profile. Please try again or contact your administrator.';
                 }
             }
         } catch (Exception $e) {
+            // #region agent log
+            file_put_contents('/Users/wellis/Desktop/Cursor/people-management-service/.cursor/debug.log', json_encode(['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'C', 'location' => 'index.php:56', 'message' => 'Exception caught in profile creation', 'data' => ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine(), 'trace' => substr($e->getTraceAsString(), 0, 500)]], JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
+            // #endregion
             error_log("Error creating profile: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
             $error = 'An error occurred while creating your profile. Please try again.';
         }
