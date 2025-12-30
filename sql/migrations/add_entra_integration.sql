@@ -74,3 +74,4 @@ CREATE TABLE IF NOT EXISTS entra_sync (
     INDEX idx_sync_status (sync_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
