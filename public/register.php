@@ -4,17 +4,7 @@
  * Handles user registration for new organisations
  */
 
-// Enable error display temporarily to catch any issues
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('log_errors', 1);
-
-// Wrap everything in try-catch to catch fatal errors
-try {
-    require_once dirname(__DIR__) . '/config/config.php';
-} catch (Throwable $e) {
-    die("Fatal error loading config: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
-}
+require_once dirname(__DIR__) . '/config/config.php';
 
 // Redirect if already logged in
 if (Auth::isLoggedIn()) {
@@ -154,12 +144,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-try {
-    $pageTitle = 'Register';
-    include INCLUDES_PATH . '/header.php';
-} catch (Throwable $e) {
-    die("Fatal error loading header: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
-}
+$pageTitle = 'Register';
+include INCLUDES_PATH . '/header.php';
 ?>
 
 <div class="card">
@@ -216,10 +202,4 @@ try {
     </p>
 </div>
 
-<?php 
-try {
-    include INCLUDES_PATH . '/footer.php';
-} catch (Throwable $e) {
-    die("Fatal error loading footer: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
-}
-?>
+<?php include INCLUDES_PATH . '/footer.php'; ?>
