@@ -19,8 +19,6 @@ class Person {
                    sp.address_line1, sp.address_line2, sp.address_city, sp.address_county,
                    sp.address_postcode, sp.address_country,
                    sp.contracted_hours, sp.place_of_work, sp.job_post_id,
-                   sp.is_tupe, sp.tupe_transfer_date, sp.tupe_previous_organisation, sp.tupe_previous_employer_ref,
-                   sp.tupe_contract_type, sp.tupe_hours_per_week, sp.tupe_salary, sp.tupe_salary_currency, sp.tupe_notes,
                    sp.wtd_agreed, sp.wtd_agreement_date, sp.wtd_agreement_version,
                    sp.wtd_opt_out, sp.wtd_opt_out_date, sp.wtd_opt_out_expiry_date, sp.wtd_notes,
                    sp.annual_leave_allocation, sp.annual_leave_used, sp.annual_leave_carry_over,
@@ -68,8 +66,6 @@ class Person {
                    sp.address_line1, sp.address_line2, sp.address_city, sp.address_county,
                    sp.address_postcode, sp.address_country,
                    sp.contracted_hours, sp.place_of_work, sp.job_post_id,
-                   sp.is_tupe, sp.tupe_transfer_date, sp.tupe_previous_organisation, sp.tupe_previous_employer_ref,
-                   sp.tupe_contract_type, sp.tupe_hours_per_week, sp.tupe_salary, sp.tupe_salary_currency, sp.tupe_notes,
                    sp.wtd_agreed, sp.wtd_agreement_date, sp.wtd_agreement_version,
                    sp.wtd_opt_out, sp.wtd_opt_out_date, sp.wtd_opt_out_expiry_date, sp.wtd_notes,
                    sp.annual_leave_allocation, sp.annual_leave_used, sp.annual_leave_carry_over,
@@ -435,9 +431,6 @@ class Person {
                                   'address_line1', 'address_line2', 'address_city', 'address_county', 
                                   'address_postcode', 'address_country',
                                   'contracted_hours', 'place_of_work', 'job_post_id',
-                                  'is_tupe', 'tupe_transfer_date', 'tupe_previous_organisation',
-                                  'tupe_previous_employer_ref', 'tupe_contract_type', 'tupe_hours_per_week',
-                                  'tupe_salary', 'tupe_salary_currency', 'tupe_notes',
                                   'wtd_agreed', 'wtd_agreement_date', 'wtd_agreement_version',
                                   'wtd_opt_out', 'wtd_opt_out_date', 'wtd_opt_out_expiry_date', 'wtd_notes',
                                   'signature_path', 'signature_created_at', 'signature_method'];
@@ -464,7 +457,7 @@ class Person {
                         $staffFields[] = "$field = ?";
                         $value = $data[$field];
                         // Handle boolean fields - ensure they're 1 or 0, not true/false or empty string
-                        if (in_array($field, ['is_tupe', 'is_bank_staff', 'is_apprentice', 'has_visa', 'wtd_agreed', 'wtd_opt_out'])) {
+                        if (in_array($field, ['is_bank_staff', 'is_apprentice', 'has_visa', 'wtd_agreed', 'wtd_opt_out'])) {
                             $staffParams[] = ($value === true || $value === 1 || $value === '1') ? 1 : 0;
                         } else {
                             $staffParams[] = $value;
