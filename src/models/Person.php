@@ -146,14 +146,6 @@ class Person {
      * Create a new person (staff)
      */
     public static function createStaff($data) {
-        // #region agent log
-        $logPath = ROOT_PATH . '/.cursor/debug.log';
-        $logDir = dirname($logPath);
-        if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
-        $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'Person.php:162', 'message' => 'createStaff entry', 'data' => ['dataKeys' => array_keys($data), 'hasOrganisationId' => isset($data['organisation_id']), 'hasUserId' => isset($data['user_id']), 'hasFirstName' => isset($data['first_name']), 'hasLastName' => isset($data['last_name']), 'hasEmail' => isset($data['email']), 'organisationId' => $data['organisation_id'] ?? null, 'userId' => $data['user_id'] ?? null, 'firstName' => $data['first_name'] ?? null, 'lastName' => $data['last_name'] ?? null, 'email' => $data['email'] ?? null]];
-        @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-        error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-        // #endregion
         $db = getDbConnection();
         
         try {
@@ -161,25 +153,12 @@ class Person {
             
             // Check if user_id is provided and already has a profile
             if (!empty($data['user_id'])) {
-                // #region agent log
-                $logPath = ROOT_PATH . '/.cursor/debug.log';
-                $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'Person.php:170', 'message' => 'Checking for existing profile by user_id', 'data' => ['userId' => $data['user_id'], 'organisationId' => $data['organisation_id']]];
-                @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-                error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-                // #endregion
                 $checkStmt = $db->prepare("
                     SELECT id FROM people 
                     WHERE user_id = ? AND organisation_id = ?
                 ");
                 $checkStmt->execute([$data['user_id'], $data['organisation_id']]);
                 $existingProfile = $checkStmt->fetch();
-                
-                // #region agent log
-                $logPath = ROOT_PATH . '/.cursor/debug.log';
-                $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'Person.php:175', 'message' => 'Existing profile check result', 'data' => ['existingProfileFound' => !empty($existingProfile), 'existingPersonId' => $existingProfile['id'] ?? null]];
-                @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-                error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-                // #endregion
                 
                 if ($existingProfile) {
                     // User already has a profile - update it instead of creating a new one
@@ -200,12 +179,6 @@ class Person {
             
             // Check if email is provided and matches an existing user's profile
             if (!empty($data['email'])) {
-                // #region agent log
-                $logPath = ROOT_PATH . '/.cursor/debug.log';
-                $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'Person.php:195', 'message' => 'Checking for existing profile by email', 'data' => ['email' => $data['email'], 'organisationId' => $data['organisation_id']]];
-                @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-                error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-                // #endregion
                 $checkStmt = $db->prepare("
                     SELECT p.id, p.user_id 
                     FROM people p
@@ -216,13 +189,6 @@ class Person {
                 ");
                 $checkStmt->execute([$data['email'], $data['email'], $data['organisation_id']]);
                 $existingProfile = $checkStmt->fetch();
-                
-                // #region agent log
-                $logPath = ROOT_PATH . '/.cursor/debug.log';
-                $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'Person.php:205', 'message' => 'Email check result', 'data' => ['existingProfileFound' => !empty($existingProfile), 'existingPersonId' => $existingProfile['id'] ?? null]];
-                @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-                error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-                // #endregion
                 
                 if ($existingProfile) {
                     // Found existing profile by email - update it and link user if provided
@@ -250,12 +216,6 @@ class Person {
             }
             
             // Insert into people table
-            // #region agent log
-            $logPath = ROOT_PATH . '/.cursor/debug.log';
-            $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'B', 'location' => 'Person.php:233', 'message' => 'Before INSERT into people table', 'data' => ['organisationId' => $data['organisation_id'], 'userId' => $data['user_id'] ?? null, 'firstName' => $data['first_name'] ?? null, 'lastName' => $data['last_name'] ?? null, 'email' => $data['email'] ?? null, 'hasFirstName' => !empty($data['first_name']), 'hasLastName' => !empty($data['last_name'])]];
-            @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-            error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-            // #endregion
             $stmt = $db->prepare("
                 INSERT INTO people (
                     organisation_id, person_type, user_id, first_name, last_name,
@@ -280,13 +240,6 @@ class Person {
             ]);
             
             $personId = $db->lastInsertId();
-            
-            // #region agent log
-            $logPath = ROOT_PATH . '/.cursor/debug.log';
-            $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'B', 'location' => 'Person.php:256', 'message' => 'After INSERT into people table', 'data' => ['personId' => $personId, 'lastInsertId' => $personId]];
-            @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-            error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-            // #endregion
             
             // Insert staff profile if staff-specific data provided
             $hasStaffData = isset($data['job_title']) || isset($data['employment_start_date']) || 
@@ -336,33 +289,12 @@ class Person {
             
             $db->commit();
             
-            // #region agent log
-            $logPath = ROOT_PATH . '/.cursor/debug.log';
-            $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'B', 'location' => 'Person.php:304', 'message' => 'Transaction committed, calling findById', 'data' => ['personId' => $personId]];
-            @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-            error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-            // #endregion
-            
             $result = self::findById($personId);
-            
-            // #region agent log
-            $logPath = ROOT_PATH . '/.cursor/debug.log';
-            $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'B', 'location' => 'Person.php:305', 'message' => 'findById result', 'data' => ['resultFound' => !empty($result), 'resultId' => $result['id'] ?? null]];
-            @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-            error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-            // #endregion
             
             return $result;
             
         } catch (Exception $e) {
             $db->rollBack();
-            // #region agent log
-            $errorInfo = $db->errorInfo();
-            $logPath = ROOT_PATH . '/.cursor/debug.log';
-            $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'C', 'location' => 'Person.php:307', 'message' => 'Exception in createStaff', 'data' => ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine(), 'code' => $e->getCode(), 'dbErrorCode' => $errorInfo[0] ?? null, 'dbErrorMsg' => $errorInfo[2] ?? null, 'trace' => substr($e->getTraceAsString(), 0, 1000)]];
-            @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-            error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-            // #endregion
             error_log("Error creating staff: " . $e->getMessage());
             return null;
         }

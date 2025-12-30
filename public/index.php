@@ -26,33 +26,12 @@ try {
 // Handle profile creation request
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_profile']) && CSRF::validatePost()) {
-    // #region agent log
-    $logPath = ROOT_PATH . '/.cursor/debug.log';
-    $logDir = dirname($logPath);
-    if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
-    $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'index.php:28', 'message' => 'Profile creation POST received', 'data' => ['organisationId' => $organisationId, 'userId' => $userId, 'userKeys' => array_keys($user ?? []), 'hasFirstName' => isset($user['first_name']), 'hasLastName' => isset($user['last_name']), 'hasEmail' => isset($user['email'])]];
-    @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-    error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-    // #endregion
     if (!$organisationId) {
-        // #region agent log
-        $logPath = ROOT_PATH . '/.cursor/debug.log';
-        $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'D', 'location' => 'index.php:30', 'message' => 'Organisation ID is null', 'data' => ['organisationId' => $organisationId]];
-        @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-        error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-        // #endregion
         $error = 'Organisation not found. Please contact your administrator.';
     } else {
         try {
             // Check if profile already exists
             $person = Person::findByUserId($userId, $organisationId);
-            
-            // #region agent log
-            $logPath = ROOT_PATH . '/.cursor/debug.log';
-            $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'index.php:35', 'message' => 'Existing profile check result', 'data' => ['personExists' => !empty($person), 'personId' => $person['id'] ?? null]];
-            @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-            error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-            // #endregion
             
             if (!$person) {
                 // Create a basic staff profile for the user
@@ -65,42 +44,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_profile']) && 
                     'is_active' => true
                 ];
                 
-                // #region agent log
-                $logPath = ROOT_PATH . '/.cursor/debug.log';
-                $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'index.php:46', 'message' => 'Before createStaff call', 'data' => ['staffData' => $staffData, 'hasFirstName' => !empty($staffData['first_name']), 'hasLastName' => !empty($staffData['last_name']), 'hasEmail' => !empty($staffData['email']), 'organisationId' => $staffData['organisation_id'], 'userId' => $staffData['user_id']]];
-                @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-                error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-                // #endregion
-                
                 $person = Person::createStaff($staffData);
-                
-                // #region agent log
-                $logPath = ROOT_PATH . '/.cursor/debug.log';
-                $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'index.php:48', 'message' => 'After createStaff call', 'data' => ['personCreated' => !empty($person), 'personId' => $person['id'] ?? null, 'personType' => $person['person_type'] ?? null]];
-                @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-                error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-                // #endregion
                 
                 if ($person) {
                     header('Location: ' . url('index.php') . '?profile_created=1');
                     exit;
                 } else {
-                    // #region agent log
-                    $logPath = ROOT_PATH . '/.cursor/debug.log';
-                    $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'B', 'location' => 'index.php:53', 'message' => 'createStaff returned null', 'data' => ['staffData' => $staffData]];
-                    @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-                    error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-                    // #endregion
                     $error = 'Failed to create profile. Please try again or contact your administrator.';
                 }
             }
         } catch (Exception $e) {
-            // #region agent log
-            $logPath = ROOT_PATH . '/.cursor/debug.log';
-            $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'C', 'location' => 'index.php:56', 'message' => 'Exception caught in profile creation', 'data' => ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine(), 'trace' => substr($e->getTraceAsString(), 0, 500)]];
-            @file_put_contents($logPath, json_encode($logData, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
-            error_log("DEBUG: " . json_encode($logData, JSON_UNESCAPED_SLASHES));
-            // #endregion
             error_log("Error creating profile: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
             $error = 'An error occurred while creating your profile. Please try again.';
         }
