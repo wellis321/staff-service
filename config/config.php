@@ -221,7 +221,9 @@ if (!function_exists('url')) {
         
         // Build URL: APP_URL + basePath + path
         $fullPath = $basePath ? $basePath . '/' . $path : $path;
-        return $appUrl . '/' . $fullPath;
+        // Ensure fullPath starts with / but don't double it
+        $fullPath = '/' . ltrim($fullPath, '/');
+        return $appUrl . $fullPath;
     }
 }
 

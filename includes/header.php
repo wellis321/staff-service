@@ -283,8 +283,8 @@
                 <?php else: ?>
                     <nav id="nav-links" class="nav-links" data-menu-state="closed" role="navigation" aria-label="Main navigation">
                         <a href="<?php echo url('landing.php'); ?>" class="<?php echo $isActive('landing.php'); ?>">Home</a>
-                        <a href="<?php echo url('docs.php'); ?>" class="<?php echo $isActive('docs.php'); ?>">Docs</a>
                         <a href="<?php echo url('security.php'); ?>" class="<?php echo $isActive('security.php'); ?>">Security</a>
+                        <a href="<?php echo url('docs.php'); ?>" class="<?php echo $isActive('docs.php'); ?>">Docs</a>
                         <a href="<?php echo url('login.php'); ?>" class="<?php echo $isActive('login.php'); ?>">Login</a>
                         <a href="<?php echo url('register.php'); ?>" class="<?php echo $isActive('register.php'); ?>">Register</a>
                     </nav>
