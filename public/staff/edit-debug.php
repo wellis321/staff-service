@@ -160,8 +160,23 @@ try {
             echo "   ✓ Fallback query successful, found " . count($allUnits) . " units\n\n";
         } else {
             echo "   ✓ getAllByOrganisation() method exists\n";
-            $allUnits = OrganisationalUnits::getAllByOrganisation($organisationId);
-            echo "   ✓ Found " . (is_array($allUnits) ? count($allUnits) : 'N/A') . " units\n\n";
+            try {
+                $allUnits = OrganisationalUnits::getAllByOrganisation($organisationId);
+                echo "   ✓ Found " . (is_array($allUnits) ? count($allUnits) : 'N/A') . " units\n\n";
+            } catch (Exception $e) {
+                echo "   ✗ Method failed: " . $e->getMessage() . "\n";
+                echo "   Using fallback query...\n";
+                $db = getDbConnection();
+                $stmt = $db->prepare("
+                    SELECT id, name, code 
+                    FROM organisational_units 
+                    WHERE organisation_id = ? 
+                    ORDER BY name
+                ");
+                $stmt->execute([$organisationId]);
+                $allUnits = $stmt->fetchAll();
+                echo "   ✓ Fallback query successful, found " . count($allUnits) . " units\n\n";
+            }
         }
     }
 } catch (Exception $e) {

@@ -163,10 +163,30 @@ try {
 try {
     // Check if OrganisationalUnits class exists and has the method
     if (class_exists('OrganisationalUnits') && method_exists('OrganisationalUnits', 'getAllByOrganisation')) {
-        $allUnits = OrganisationalUnits::getAllByOrganisation($organisationId);
-        // #region agent log
-        $logEntry('edit.php:75', 'OrganisationalUnits::getAllByOrganisation() completed', ['count' => is_array($allUnits) ? count($allUnits) : 'not_array']);
-        // #endregion
+        try {
+            $allUnits = OrganisationalUnits::getAllByOrganisation($organisationId);
+            // #region agent log
+            $logEntry('edit.php:75', 'OrganisationalUnits::getAllByOrganisation() completed', ['count' => is_array($allUnits) ? count($allUnits) : 'not_array']);
+            // #endregion
+        } catch (Exception $e) {
+            // Method exists but failed (likely missing table) - use fallback query
+            // #region agent log
+            $logEntry('edit.php:75', 'OrganisationalUnits::getAllByOrganisation() failed, using fallback', ['error' => $e->getMessage()], 'G');
+            // #endregion
+            $db = getDbConnection();
+            $stmt = $db->prepare("
+                SELECT id, name, code 
+                FROM organisational_units 
+                WHERE organisation_id = ? 
+                ORDER BY name
+            ");
+            $stmt->execute([$organisationId]);
+            $allUnits = $stmt->fetchAll();
+            // #region agent log
+            $logEntry('edit.php:89', 'Fallback query completed', ['count' => count($allUnits)]);
+            // #endregion
+            error_log("OrganisationalUnits::getAllByOrganisation() failed, using fallback: " . $e->getMessage());
+        }
     } else {
         // Fallback: query organisational_units directly
         // #region agent log
@@ -187,9 +207,9 @@ try {
     }
 } catch (Exception $e) {
     // #region agent log
-    $logEntry('edit.php:75', 'OrganisationalUnits::getAllByOrganisation() failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()], 'G');
+    $logEntry('edit.php:75', 'Unexpected error getting organisational units', ['error' => $e->getMessage()], 'G');
     // #endregion
-    // Use empty array as fallback instead of throwing
+    // Use empty array as last resort fallback
     $allUnits = [];
     error_log("Error getting organisational units: " . $e->getMessage());
 }
