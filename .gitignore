@@ -39,3 +39,43 @@ shared-auth
 coverage/
 .phpunit.cache/
 
+# Documentation (not needed in production)
+*.md
+!README.md
+docs/
+DEPLOYMENT_FIX.md
+LOCAL_SETUP.md
+TESTING.md
+TEST_SUITE_SUMMARY.md
+
+# Test files (not needed in production)
+tests/
+*test*.php
+phpunit.xml
+run-tests.sh
+
+# Debug and diagnostic scripts (not needed in production)
+public/debug.php
+public/check-*.php
+public/test-*.php
+public/fix-*.php
+public/register-debug.php
+
+# Migration scripts (one-time use, not needed after running)
+public/migrate-*.php
+
+# Development scripts (not needed in production)
+start.sh
+*.sh
+
+# Examples (not needed in production)
+examples/
+
+# Development zip files
+*.zip
+
+# SQL development files (keep migrations for reference, but not needed in production runtime)
+sql/complete_schema.sql
+sql/schema.sql
+# Note: sql/production_schema.sql and sql/migrations/ should be kept for reference
+
