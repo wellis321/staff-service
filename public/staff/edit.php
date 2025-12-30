@@ -1,10 +1,55 @@
 <?php
+// #region agent log
+$logFile = dirname(__DIR__, 2) . '/.cursor/debug.log';
+$logEntry = function($location, $message, $data = [], $hypothesisId = 'A') use ($logFile) {
+    $entry = json_encode([
+        'sessionId' => 'debug-session',
+        'runId' => 'run1',
+        'hypothesisId' => $hypothesisId,
+        'location' => $location,
+        'message' => $message,
+        'data' => $data,
+        'timestamp' => time() * 1000
+    ]) . "\n";
+    file_put_contents($logFile, $entry, FILE_APPEND);
+};
+// #endregion
+
 require_once dirname(__DIR__, 2) . '/config/config.php';
 
-Auth::requireLogin();
-RBAC::requireAdmin();
+// #region agent log
+$logEntry('edit.php:3', 'Config loaded, starting authentication');
+// #endregion
+
+try {
+    Auth::requireLogin();
+    // #region agent log
+    $logEntry('edit.php:6', 'Auth::requireLogin() passed');
+    // #endregion
+} catch (Exception $e) {
+    // #region agent log
+    $logEntry('edit.php:6', 'Auth::requireLogin() failed', ['error' => $e->getMessage()], 'A');
+    // #endregion
+    throw $e;
+}
+
+try {
+    RBAC::requireAdmin();
+    // #region agent log
+    $logEntry('edit.php:9', 'RBAC::requireAdmin() passed');
+    // #endregion
+} catch (Exception $e) {
+    // #region agent log
+    $logEntry('edit.php:9', 'RBAC::requireAdmin() failed', ['error' => $e->getMessage()], 'B');
+    // #endregion
+    throw $e;
+}
 
 $organisationId = Auth::getOrganisationId();
+// #region agent log
+$logEntry('edit.php:12', 'Got organisation ID', ['organisationId' => $organisationId]);
+// #endregion
+
 $error = '';
 $success = '';
 
@@ -15,41 +60,122 @@ if (!$personId) {
     exit;
 }
 
+// #region agent log
+$logEntry('edit.php:22', 'Got person ID', ['personId' => $personId]);
+// #endregion
+
 // Get person
-$person = Person::findById($personId, $organisationId);
+try {
+    $person = Person::findById($personId, $organisationId);
+    // #region agent log
+    $logEntry('edit.php:26', 'Person::findById() completed', ['found' => !empty($person)]);
+    // #endregion
+} catch (Exception $e) {
+    // #region agent log
+    $logEntry('edit.php:26', 'Person::findById() failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()], 'C');
+    // #endregion
+    throw $e;
+}
+
 if (!$person || $person['organisation_id'] != $organisationId) {
     header('Location: ' . url('staff/index.php?error=not_found'));
     exit;
 }
 
 // Get all users for linking (including those who already have profiles)
-$db = getDbConnection();
-$stmt = $db->prepare("
-    SELECT u.id, u.first_name, u.last_name, u.email,
-           CASE WHEN p.id IS NOT NULL AND p.id != ? THEN 1 ELSE 0 END as has_other_profile
-    FROM users u
-    LEFT JOIN people p ON p.user_id = u.id AND p.organisation_id = ? AND p.id != ?
-    WHERE u.organisation_id = ? AND u.is_active = TRUE
-    ORDER BY u.last_name, u.first_name
-");
-$stmt->execute([$personId, $organisationId, $personId, $organisationId]);
-$users = $stmt->fetchAll();
+try {
+    $db = getDbConnection();
+    // #region agent log
+    $logEntry('edit.php:40', 'Database connection obtained');
+    // #endregion
+    
+    $stmt = $db->prepare("
+        SELECT u.id, u.first_name, u.last_name, u.email,
+               CASE WHEN p.id IS NOT NULL AND p.id != ? THEN 1 ELSE 0 END as has_other_profile
+        FROM users u
+        LEFT JOIN people p ON p.user_id = u.id AND p.organisation_id = ? AND p.id != ?
+        WHERE u.organisation_id = ? AND u.is_active = TRUE
+        ORDER BY u.last_name, u.first_name
+    ");
+    $stmt->execute([$personId, $organisationId, $personId, $organisationId]);
+    $users = $stmt->fetchAll();
+    // #region agent log
+    $logEntry('edit.php:50', 'Users query completed', ['count' => count($users)]);
+    // #endregion
+} catch (Exception $e) {
+    // #region agent log
+    $logEntry('edit.php:40', 'Users query failed', ['error' => $e->getMessage()], 'D');
+    // #endregion
+    throw $e;
+}
 
 // Get all staff for line manager selection
-$staffForManager = Person::getStaffByOrganisation($organisationId, true);
+try {
+    $staffForManager = Person::getStaffByOrganisation($organisationId, true);
+    // #region agent log
+    $logEntry('edit.php:53', 'Person::getStaffByOrganisation() completed', ['count' => count($staffForManager)]);
+    // #endregion
+} catch (Exception $e) {
+    // #region agent log
+    $logEntry('edit.php:53', 'Person::getStaffByOrganisation() failed', ['error' => $e->getMessage()], 'E');
+    // #endregion
+    throw $e;
+}
+
 $staffForManager = array_filter($staffForManager, function($s) use ($personId) {
     return $s['id'] != $personId; // Exclude self
 });
 
 // Get organisational units
-$organisationalUnits = Person::getOrganisationalUnits($personId);
-$allUnits = OrganisationalUnits::getAllByOrganisation($organisationId);
+try {
+    $organisationalUnits = Person::getOrganisationalUnits($personId);
+    // #region agent log
+    $logEntry('edit.php:66', 'Person::getOrganisationalUnits() completed', ['count' => count($organisationalUnits)]);
+    // #endregion
+} catch (Exception $e) {
+    // #region agent log
+    $logEntry('edit.php:66', 'Person::getOrganisationalUnits() failed', ['error' => $e->getMessage()], 'F');
+    // #endregion
+    throw $e;
+}
+
+try {
+    $allUnits = OrganisationalUnits::getAllByOrganisation($organisationId);
+    // #region agent log
+    $logEntry('edit.php:75', 'OrganisationalUnits::getAllByOrganisation() completed', ['count' => is_array($allUnits) ? count($allUnits) : 'not_array']);
+    // #endregion
+} catch (Exception $e) {
+    // #region agent log
+    $logEntry('edit.php:75', 'OrganisationalUnits::getAllByOrganisation() failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()], 'G');
+    // #endregion
+    throw $e;
+}
 
 // Get active job descriptions for selection
-$jobDescriptions = JobDescription::getAllByOrganisation($organisationId, true);
+try {
+    $jobDescriptions = JobDescription::getAllByOrganisation($organisationId, true);
+    // #region agent log
+    $logEntry('edit.php:87', 'JobDescription::getAllByOrganisation() completed', ['count' => count($jobDescriptions)]);
+    // #endregion
+} catch (Exception $e) {
+    // #region agent log
+    $logEntry('edit.php:87', 'JobDescription::getAllByOrganisation() failed', ['error' => $e->getMessage()], 'H');
+    // #endregion
+    throw $e;
+}
 
 // Get active job posts for selection
-$jobPosts = JobPost::getAllByOrganisation($organisationId, true);
+try {
+    $jobPosts = JobPost::getAllByOrganisation($organisationId, true);
+    // #region agent log
+    $logEntry('edit.php:97', 'JobPost::getAllByOrganisation() completed', ['count' => count($jobPosts)]);
+    // #endregion
+} catch (Exception $e) {
+    // #region agent log
+    $logEntry('edit.php:97', 'JobPost::getAllByOrganisation() failed', ['error' => $e->getMessage()], 'I');
+    // #endregion
+    throw $e;
+}
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
