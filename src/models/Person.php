@@ -19,14 +19,9 @@ class Person {
                    sp.address_line1, sp.address_line2, sp.address_city, sp.address_county,
                    sp.address_postcode, sp.address_country,
                    sp.contracted_hours, sp.place_of_work, sp.job_post_id,
-                   sp.wtd_agreed, sp.wtd_agreement_date, sp.wtd_agreement_version,
-                   sp.wtd_opt_out, sp.wtd_opt_out_date, sp.wtd_opt_out_expiry_date, sp.wtd_notes,
                    sp.annual_leave_allocation, sp.annual_leave_used, sp.annual_leave_carry_over,
                    sp.time_in_lieu_hours, sp.time_in_lieu_used, sp.lying_time_hours, sp.lying_time_used,
                    sp.leave_year_start_date, sp.leave_year_end_date,
-                   sp.contract_type, sp.is_bank_staff, sp.is_apprentice, sp.has_visa,
-                   sp.visa_type, sp.visa_number, sp.visa_issue_date, sp.visa_expiry_date, sp.visa_sponsor,
-                   sp.apprenticeship_start_date, sp.apprenticeship_end_date, sp.apprenticeship_level, sp.apprenticeship_provider,
                    sp.signature_path, sp.signature_created_at, sp.signature_method,
                    jp.title as job_post_title, jp.location as job_post_location, jp.hours_per_week as job_post_hours,
                    jp.contract_type as job_post_contract_type, jp.salary_range_min as job_post_salary_min,
@@ -66,14 +61,9 @@ class Person {
                    sp.address_line1, sp.address_line2, sp.address_city, sp.address_county,
                    sp.address_postcode, sp.address_country,
                    sp.contracted_hours, sp.place_of_work, sp.job_post_id,
-                   sp.wtd_agreed, sp.wtd_agreement_date, sp.wtd_agreement_version,
-                   sp.wtd_opt_out, sp.wtd_opt_out_date, sp.wtd_opt_out_expiry_date, sp.wtd_notes,
                    sp.annual_leave_allocation, sp.annual_leave_used, sp.annual_leave_carry_over,
                    sp.time_in_lieu_hours, sp.time_in_lieu_used, sp.lying_time_hours, sp.lying_time_used,
                    sp.leave_year_start_date, sp.leave_year_end_date,
-                   sp.contract_type, sp.is_bank_staff, sp.is_apprentice, sp.has_visa,
-                   sp.visa_type, sp.visa_number, sp.visa_issue_date, sp.visa_expiry_date, sp.visa_sponsor,
-                   sp.apprenticeship_start_date, sp.apprenticeship_end_date, sp.apprenticeship_level, sp.apprenticeship_provider,
                    sp.signature_path, sp.signature_created_at, sp.signature_method,
                    jp.title as job_post_title, jp.location as job_post_location, jp.hours_per_week as job_post_hours,
                    jp.contract_type as job_post_contract_type, jp.salary_range_min as job_post_salary_min,
@@ -431,8 +421,6 @@ class Person {
                                   'address_line1', 'address_line2', 'address_city', 'address_county', 
                                   'address_postcode', 'address_country',
                                   'contracted_hours', 'place_of_work', 'job_post_id',
-                                  'wtd_agreed', 'wtd_agreement_date', 'wtd_agreement_version',
-                                  'wtd_opt_out', 'wtd_opt_out_date', 'wtd_opt_out_expiry_date', 'wtd_notes',
                                   'signature_path', 'signature_created_at', 'signature_method'];
             
             $hasStaffData = false;
@@ -456,12 +444,8 @@ class Person {
                     if (isset($data[$field])) {
                         $staffFields[] = "$field = ?";
                         $value = $data[$field];
-                        // Handle boolean fields - ensure they're 1 or 0, not true/false or empty string
-                        if (in_array($field, ['is_bank_staff', 'is_apprentice', 'has_visa', 'wtd_agreed', 'wtd_opt_out'])) {
-                            $staffParams[] = ($value === true || $value === 1 || $value === '1') ? 1 : 0;
-                        } else {
-                            $staffParams[] = $value;
-                        }
+                        // No boolean fields in production schema - all fields are handled the same way
+                        $staffParams[] = $value;
                     }
                 }
                 
