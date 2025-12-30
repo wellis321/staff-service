@@ -77,7 +77,20 @@ include INCLUDES_PATH . '/header.php';
 <div class="card">
     <h1>Welcome, <?php echo htmlspecialchars($user['first_name'] ?? 'User'); ?></h1>
     
-    <?php if ($person): ?>
+    <?php 
+    $isSuperAdmin = RBAC::isSuperAdmin();
+    
+    if ($isSuperAdmin): 
+        // Super admins don't need staff profiles
+    ?>
+        <div style="margin-top: 2rem;">
+            <div class="alert alert-info">
+                <p><strong>Super Administrator Account</strong></p>
+                <p>You have super administrator privileges. You can manage users, organisations, and system settings.</p>
+                <p>Super administrators don't require staff profiles as you have system-wide access.</p>
+            </div>
+        </div>
+    <?php elseif ($person): ?>
         <div style="margin-top: 2rem;">
             <h2>Your Profile</h2>
             <p><strong>Name:</strong> <?php echo htmlspecialchars($person['first_name'] . ' ' . $person['last_name']); ?></p>
@@ -97,13 +110,19 @@ include INCLUDES_PATH . '/header.php';
     <?php else: ?>
         <div class="alert alert-info" style="margin-top: 2rem;">
             <p><strong>No profile found.</strong> Create your staff profile to get started.</p>
-            <form method="POST" action="" style="margin-top: 1rem;">
-                <?php echo CSRF::tokenField(); ?>
-                <input type="hidden" name="create_profile" value="1">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-user-plus"></i> Create My Profile
-                </button>
-            </form>
+            <?php if ($organisationId): ?>
+                <form method="POST" action="" style="margin-top: 1rem;">
+                    <?php echo CSRF::tokenField(); ?>
+                    <input type="hidden" name="create_profile" value="1">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Create My Profile
+                    </button>
+                </form>
+            <?php else: ?>
+                <p style="margin-top: 1rem; color: #dc2626;">
+                    <strong>Organisation not found.</strong> Please contact your administrator to assign you to an organisation.
+                </p>
+            <?php endif; ?>
             <?php if (isset($error)): ?>
                 <div class="alert alert-error" style="margin-top: 1rem;">
                     <?php echo htmlspecialchars($error); ?>
@@ -124,7 +143,7 @@ include INCLUDES_PATH . '/header.php';
     ?>
         <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
             <h2>Administration</h2>
-            <?php if ($organisationId): ?>
+            <?php if ($organisationId && (RBAC::isOrganisationAdmin() || RBAC::isSuperAdmin())): ?>
                 <a href="<?php echo url('staff/index.php'); ?>" class="btn btn-primary">
                     <i class="fas fa-users"></i> Manage Staff
                 </a>
@@ -132,6 +151,14 @@ include INCLUDES_PATH . '/header.php';
             <?php if (RBAC::isSuperAdmin()): ?>
                 <a href="<?php echo url('admin/users.php'); ?>" class="btn btn-primary" style="margin-left: 0.5rem;">
                     <i class="fas fa-users-cog"></i> Manage Users
+                </a>
+                <a href="<?php echo url('admin/organisation-requests.php'); ?>" class="btn btn-primary" style="margin-left: 0.5rem;">
+                    <i class="fas fa-building"></i> Organisation Requests
+                </a>
+            <?php endif; ?>
+            <?php if (RBAC::isOrganisationAdmin() || RBAC::isSuperAdmin()): ?>
+                <a href="<?php echo url('admin/api-keys.php'); ?>" class="btn btn-primary" style="margin-left: 0.5rem;">
+                    <i class="fas fa-key"></i> API Keys
                 </a>
             <?php endif; ?>
         </div>
