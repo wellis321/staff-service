@@ -14,14 +14,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!CSRF::validatePost()) {
         $error = 'Invalid security token. Please try again.';
     } else {
-        // Rate limiting: 3 attempts per hour per IP
-        $ip = RateLimiter::getClientIp();
-        $rateLimit = RateLimiter::check($ip . ':register', 3, 3600); // 1 hour = 3600 seconds
+        // Rate limiting: 3 attempts per hour per IP (if RateLimiter is available)
+        $rateLimitAllowed = true;
+        if (class_exists('RateLimiter')) {
+            try {
+                $ip = RateLimiter::getClientIp();
+                $rateLimit = RateLimiter::check($ip . ':register', 3, 3600); // 1 hour = 3600 seconds
+                $rateLimitAllowed = $rateLimit['allowed'] ?? true;
+                
+                if (!$rateLimitAllowed) {
+                    $resetTime = date('H:i:s', $rateLimit['reset_at'] ?? time() + 3600);
+                    $error = "Too many registration attempts. Please try again after $resetTime.";
+                }
+            } catch (Exception $e) {
+                // If rate limiting fails, allow the request but log the error
+                error_log("Rate limiting error: " . $e->getMessage());
+                $rateLimitAllowed = true;
+            }
+        }
         
-        if (!$rateLimit['allowed']) {
-            $resetTime = date('H:i:s', $rateLimit['reset_at']);
-            $error = "Too many registration attempts. Please try again after $resetTime.";
-        } else {
+        if ($rateLimitAllowed) {
             $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
@@ -99,8 +111,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     error_log("Error auto-creating staff profile: " . $e->getMessage());
                 }
                 
-                // Reset rate limit on successful registration
-                RateLimiter::reset($ip . ':register');
+                // Reset rate limit on successful registration (if RateLimiter is available)
+                if (class_exists('RateLimiter') && isset($ip)) {
+                    try {
+                        RateLimiter::reset($ip . ':register');
+                    } catch (Exception $e) {
+                        error_log("Rate limit reset error: " . $e->getMessage());
+                    }
+                }
                 
                 // Regenerate session ID to prevent session fixation attacks
                 session_regenerate_id(true);
