@@ -60,6 +60,8 @@ Retrieve a single staff member's details.
     "is_active": true,
     "job_title": "Support Worker",
     "employment_start_date": "2024-01-15",
+    "photo_url": "https://your-domain.com/view-image.php?path=person_1_1234567890.jpg",
+    "signature_url": "https://your-domain.com/view-image.php?path=people%2Fsignatures%2Fsig_1.png",
     "organisational_units": [
       {
         "id": 1,
@@ -71,6 +73,14 @@ Retrieve a single staff member's details.
     ]
   }
 }
+```
+
+`photo_url` is only present when the person has an approved photo. `signature_url` is only present when a signature exists.
+
+To fetch the image, include your API key in the request:
+```
+GET {photo_url}
+Authorization: Bearer <your-api-key>
 ```
 
 ### List Staff Members

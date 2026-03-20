@@ -1,8 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/config/config.php';
 
-Auth::requireLogin();
-
 $path = $_GET['path'] ?? '';
 if (empty($path)) {
     http_response_code(400);
@@ -13,65 +11,97 @@ if (empty($path)) {
 $path = preg_replace('/[^a-zA-Z0-9_\-\.\/]/', '', $path);
 $path = ltrim($path, '/');
 
-// Determine if this is a signature or photo based on path
-$isSignature = strpos($path, 'people/signatures/') === 0;
-if ($isSignature) {
-    // Remove 'people/signatures/' prefix to get just the filename
-    $filename = str_replace('people/signatures/', '', $path);
-    $fullPath = SIGNATURE_UPLOAD_PATH . '/' . $filename;
-    $realUploadPath = realpath(SIGNATURE_UPLOAD_PATH);
+// Authenticate — API key callers (external apps) or session users
+$apiCaller = null;
+if (class_exists('ApiAuth')) {
+    $apiCaller = ApiAuth::authenticate();
+}
+
+if ($apiCaller) {
+    // API key authenticated — org-scoped access
+    $organisationId = (int)($apiCaller['organisation_id'] ?? 0);
+    if (!$organisationId) {
+        http_response_code(403);
+        die('Access denied');
+    }
+
+    // Determine if this is a signature or photo based on path
+    $isSignature = strpos($path, 'people/signatures/') === 0;
+    if ($isSignature) {
+        $filename = str_replace('people/signatures/', '', $path);
+        $fullPath = SIGNATURE_UPLOAD_PATH . '/' . $filename;
+        $realUploadPath = realpath(SIGNATURE_UPLOAD_PATH);
+    } else {
+        $fullPath = PHOTO_UPLOAD_PATH . '/' . $path;
+        $realUploadPath = realpath(PHOTO_UPLOAD_PATH);
+    }
+
+    $realFilePath = realpath($fullPath);
+    if (!$realFilePath || strpos($realFilePath, $realUploadPath) !== 0 || !file_exists($fullPath)) {
+        http_response_code(404);
+        die('File not found');
+    }
+
+    // Verify the file belongs to a person in the caller's organisation
+    $db = getDbConnection();
+    if ($isSignature) {
+        $ownerStmt = $db->prepare("SELECT p.organisation_id FROM people p JOIN staff_profiles sp ON sp.person_id = p.id WHERE sp.signature_path = ? LIMIT 1");
+        $ownerStmt->execute([$filename]);
+    } else {
+        $ownerStmt = $db->prepare("SELECT organisation_id FROM people WHERE photo_path = ? LIMIT 1");
+        $ownerStmt->execute([$path]);
+    }
+    $owner = $ownerStmt->fetch();
+
+    if (!$owner || (int)$owner['organisation_id'] !== $organisationId) {
+        http_response_code(403);
+        die('Access denied');
+    }
 } else {
-    // Photo path
-    $fullPath = PHOTO_UPLOAD_PATH . '/' . $path;
-    $realUploadPath = realpath(PHOTO_UPLOAD_PATH);
-}
+    // Fall back to session authentication
+    Auth::requireLogin();
 
-// Verify file exists and is within upload directory
-$realFilePath = realpath($fullPath);
+    // Determine if this is a signature or photo based on path
+    $isSignature = strpos($path, 'people/signatures/') === 0;
+    if ($isSignature) {
+        $filename = str_replace('people/signatures/', '', $path);
+        $fullPath = SIGNATURE_UPLOAD_PATH . '/' . $filename;
+        $realUploadPath = realpath(SIGNATURE_UPLOAD_PATH);
+    } else {
+        $fullPath = PHOTO_UPLOAD_PATH . '/' . $path;
+        $realUploadPath = realpath(PHOTO_UPLOAD_PATH);
+    }
 
-if (!$realFilePath || strpos($realFilePath, $realUploadPath) !== 0) {
-    http_response_code(404);
-    die('File not found');
-}
+    $realFilePath = realpath($fullPath);
+    if (!$realFilePath || strpos($realFilePath, $realUploadPath) !== 0 || !file_exists($fullPath)) {
+        http_response_code(404);
+        die('File not found');
+    }
 
-// Verify file exists
-if (!file_exists($fullPath)) {
-    http_response_code(404);
-    die('File not found');
-}
+    $organisationId = Auth::getOrganisationId();
+    $userId = Auth::getUserId();
 
-// Get organisation ID for additional security check (optional, for strict isolation)
-$organisationId = Auth::getOrganisationId();
-$userId = Auth::getUserId();
-
-// Allow viewing if user is admin or if it's their own photo/signature
-$allowed = false;
-if (RBAC::isAdmin()) {
-    $allowed = true;
-} else {
-    // Check if this is the user's own photo or signature
-    $person = Person::findByUserId($userId, $organisationId);
-    if ($person) {
-        if ($isSignature) {
-            // Check signature
-            $personSignaturePath = $person['signature_path'] ?? '';
-            if ($filename === $personSignaturePath) {
-                $allowed = true;
-            }
-        } else {
-            // Check photo
-            $personPhotoPath = str_replace(PHOTO_UPLOAD_PATH . '/', '', $person['photo_path'] ?? '');
-            $personPendingPath = str_replace(PHOTO_UPLOAD_PATH . '/', '', $person['photo_pending_path'] ?? '');
-            if ($path === $personPhotoPath || $path === $personPendingPath) {
-                $allowed = true;
+    $allowed = false;
+    if (RBAC::isAdmin()) {
+        $allowed = true;
+    } else {
+        // Non-admin: only their own photo or signature
+        $person = Person::findByUserId($userId, $organisationId);
+        if ($person) {
+            if ($isSignature) {
+                $allowed = ($filename === ($person['signature_path'] ?? ''));
+            } else {
+                $personPhotoPath = str_replace(PHOTO_UPLOAD_PATH . '/', '', $person['photo_path'] ?? '');
+                $personPendingPath = str_replace(PHOTO_UPLOAD_PATH . '/', '', $person['photo_pending_path'] ?? '');
+                $allowed = ($path === $personPhotoPath || $path === $personPendingPath);
             }
         }
     }
-}
 
-if (!$allowed) {
-    http_response_code(403);
-    die('Access denied');
+    if (!$allowed) {
+        http_response_code(403);
+        die('Access denied');
+    }
 }
 
 // Determine content type and restrict to images only

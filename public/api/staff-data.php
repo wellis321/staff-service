@@ -122,14 +122,19 @@ try {
         $organisationalUnits = Person::getOrganisationalUnits($personId);
         $person['organisational_units'] = $organisationalUnits;
         
+        // Add photo URL if an approved photo exists
+        if (!empty($person['photo_path']) && ($person['photo_approval_status'] ?? '') === 'approved') {
+            $person['photo_url'] = url('view-image.php?path=' . urlencode($person['photo_path']));
+        }
+
         // Add signature URL if signature exists
         if (!empty($person['signature_path'])) {
             $person['signature_url'] = url('view-image.php?path=' . urlencode('people/signatures/' . $person['signature_path']));
         }
-        
+
         // Remove sensitive data
         unset($person['notes']);
-        
+
         echo json_encode([
             'success' => true,
             'data' => $person
@@ -167,11 +172,16 @@ try {
             $units = Person::getOrganisationalUnits($member['id']);
             $member['organisational_units'] = $units;
             
+            // Add photo URL if an approved photo exists
+            if (!empty($member['photo_path']) && ($member['photo_approval_status'] ?? '') === 'approved') {
+                $member['photo_url'] = url('view-image.php?path=' . urlencode($member['photo_path']));
+            }
+
             // Add signature URL if signature exists
             if (!empty($member['signature_path'])) {
                 $member['signature_url'] = url('view-image.php?path=' . urlencode('people/signatures/' . $member['signature_path']));
             }
-            
+
             // Remove sensitive data
             unset($member['notes']);
         }
