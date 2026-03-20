@@ -25,55 +25,111 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Check authentication
-if (!Auth::isLoggedIn() || !RBAC::isAdmin()) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Authentication required']);
-    exit;
+// Accept either session auth (admin) or API key auth (for programmatic registration)
+$organisationId = null;
+
+$apiKey = class_exists('ApiAuth') ? ApiAuth::getApiKey() : null;
+if ($apiKey) {
+    $keyData = ApiAuth::validateApiKey($apiKey);
+    if ($keyData) {
+        $organisationId = (int) $keyData['organisation_id'];
+    }
 }
 
-$organisationId = Auth::getOrganisationId();
-$action = $_POST['action'] ?? '';
-
-// Handle webhook subscription management
-if ($action === 'subscribe') {
-    // Subscribe to webhook events
-    $url = $_POST['url'] ?? '';
-    $events = $_POST['events'] ?? [];
-    $secret = $_POST['secret'] ?? '';
-    
-    if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Valid webhook URL required']);
+if (!$organisationId) {
+    if (!Auth::isLoggedIn() || !RBAC::isAdmin()) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Authentication required']);
         exit;
     }
-    
-    // TODO: Store webhook subscription in database
-    // For now, return success
-    echo json_encode([
-        'success' => true,
-        'message' => 'Webhook subscription created (not yet implemented)',
-        'webhook_id' => 1
-    ]);
+    $organisationId = Auth::getOrganisationId();
+}
+
+// Support JSON body (API key callers) or POST fields (form callers)
+$jsonBody = json_decode(file_get_contents('php://input'), true);
+$action = $jsonBody['action'] ?? $_POST['action'] ?? '';
+
+// Handle webhook subscription management
+$db = getDbConnection();
+
+if ($action === 'subscribe') {
+    $url    = $jsonBody['url']    ?? $_POST['url']    ?? '';
+    $events = $jsonBody['events'] ?? $_POST['events'] ?? [];
+    $secret = $jsonBody['secret'] ?? $_POST['secret'] ?? '';
+
+    if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'A valid webhook URL is required']);
+        exit;
+    }
+    if (empty($secret)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'A webhook secret is required']);
+        exit;
+    }
+    if (empty($events) || !is_array($events)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'At least one event must be specified']);
+        exit;
+    }
+
+    // Upsert — if a subscription for this URL already exists for this org, update it
+    $stmt = $db->prepare("
+        SELECT id FROM webhook_subscriptions
+        WHERE organisation_id = ? AND url = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$organisationId, $url]);
+    $existing = $stmt->fetch();
+
+    if ($existing) {
+        $stmt = $db->prepare("
+            UPDATE webhook_subscriptions
+            SET events = ?, secret = ?, is_active = 1, updated_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->execute([json_encode($events), $secret, $existing['id']]);
+        echo json_encode(['success' => true, 'message' => 'Webhook subscription updated', 'webhook_id' => $existing['id']]);
+    } else {
+        $stmt = $db->prepare("
+            INSERT INTO webhook_subscriptions (organisation_id, url, events, secret, is_active)
+            VALUES (?, ?, ?, ?, 1)
+        ");
+        $stmt->execute([$organisationId, $url, json_encode($events), $secret]);
+        echo json_encode(['success' => true, 'message' => 'Webhook subscription created', 'webhook_id' => $db->lastInsertId()]);
+    }
+
 } elseif ($action === 'unsubscribe') {
-    // Unsubscribe from webhook events
-    $webhookId = isset($_POST['webhook_id']) ? (int)$_POST['webhook_id'] : 0;
-    
-    // TODO: Remove webhook subscription from database
-    echo json_encode([
-        'success' => true,
-        'message' => 'Webhook subscription removed (not yet implemented)'
-    ]);
+    $url       = $jsonBody['url']        ?? $_POST['url']        ?? '';
+    $webhookId = (int)($jsonBody['webhook_id'] ?? $_POST['webhook_id'] ?? 0);
+
+    if ($webhookId) {
+        $stmt = $db->prepare("DELETE FROM webhook_subscriptions WHERE id = ? AND organisation_id = ?");
+        $stmt->execute([$webhookId, $organisationId]);
+    } elseif ($url) {
+        $stmt = $db->prepare("DELETE FROM webhook_subscriptions WHERE url = ? AND organisation_id = ?");
+        $stmt->execute([$url, $organisationId]);
+    } else {
+        http_response_code(400);
+        echo json_encode(['error' => 'Provide either webhook_id or url to unsubscribe']);
+        exit;
+    }
+
+    echo json_encode(['success' => true, 'message' => 'Webhook subscription removed']);
+
 } elseif ($action === 'list') {
-    // List webhook subscriptions
-    // TODO: Retrieve from database
-    echo json_encode([
-        'success' => true,
-        'webhooks' => []
-    ]);
+    $stmt = $db->prepare("
+        SELECT id, url, events, is_active, last_triggered_at, last_success_at, last_failure_at, failure_count
+        FROM webhook_subscriptions
+        WHERE organisation_id = ?
+        ORDER BY created_at DESC
+    ");
+    $stmt->execute([$organisationId]);
+    echo json_encode(['success' => true, 'webhooks' => $stmt->fetchAll()]);
+
 } else {
     http_response_code(400);
-    echo json_encode(['error' => 'Invalid action']);
+    echo json_encode(['error' => 'Invalid action. Use: subscribe, unsubscribe, list']);
 }
 
 /**

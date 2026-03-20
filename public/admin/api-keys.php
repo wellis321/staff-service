@@ -57,27 +57,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'toggle') {
             $keyId = (int)($_POST['key_id'] ?? 0);
             $isActive = isset($_POST['is_active']) && $_POST['is_active'] === '1';
-            
+
             if ($keyId > 0) {
+                // Look up the key's org before modifying (needed for webhook)
+                $keyInfoStmt = $db->prepare("
+                    SELECT ak.organisation_id, o.domain
+                    FROM api_keys ak
+                    LEFT JOIN organisations o ON o.id = ak.organisation_id
+                    WHERE ak.id = ?
+                ");
+                $keyInfoStmt->execute([$keyId]);
+                $keyInfo = $keyInfoStmt->fetch();
+
                 // Super admins can toggle any key, organisation admins only their own
                 if ($isSuperAdmin) {
                     $stmt = $db->prepare("
-                        UPDATE api_keys 
-                        SET is_active = ? 
+                        UPDATE api_keys
+                        SET is_active = ?
                         WHERE id = ?
                     ");
                     $stmt->execute([$isActive ? 1 : 0, $keyId]);
                 } else {
                     $stmt = $db->prepare("
-                        UPDATE api_keys 
-                        SET is_active = ? 
+                        UPDATE api_keys
+                        SET is_active = ?
                         WHERE id = ? AND organisation_id = ?
                     ");
                     $stmt->execute([$isActive ? 1 : 0, $keyId, $organisationId]);
                 }
-                
+
                 if ($stmt->rowCount() > 0) {
                     $success = 'API key ' . ($isActive ? 'activated' : 'deactivated') . ' successfully.';
+                    // Notify connected apps when a key is deactivated
+                    if (!$isActive && $keyInfo && $keyInfo['organisation_id']) {
+                        WebhookService::fire('organisation.deactivated', [
+                            'organisation_id'     => (int) $keyInfo['organisation_id'],
+                            'organisation_domain' => $keyInfo['domain'] ?? null,
+                        ], (int) $keyInfo['organisation_id']);
+                    }
                 } else {
                     $error = 'API key not found or access denied.';
                 }
@@ -86,23 +103,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } elseif ($action === 'delete') {
             $keyId = (int)($_POST['key_id'] ?? 0);
-            
+
             if ($keyId > 0) {
+                // Look up the key's org before deleting (needed for webhook)
+                $keyInfoStmt = $db->prepare("
+                    SELECT ak.organisation_id, o.domain
+                    FROM api_keys ak
+                    LEFT JOIN organisations o ON o.id = ak.organisation_id
+                    WHERE ak.id = ?
+                ");
+                $keyInfoStmt->execute([$keyId]);
+                $keyInfo = $keyInfoStmt->fetch();
+
+                // Fire webhook before deleting so subscriptions still exist
+                if ($keyInfo && $keyInfo['organisation_id']) {
+                    WebhookService::fire('organisation.deactivated', [
+                        'organisation_id'     => (int) $keyInfo['organisation_id'],
+                        'organisation_domain' => $keyInfo['domain'] ?? null,
+                    ], (int) $keyInfo['organisation_id']);
+                }
+
                 // Super admins can delete any key, organisation admins only their own
                 if ($isSuperAdmin) {
                     $stmt = $db->prepare("
-                        DELETE FROM api_keys 
+                        DELETE FROM api_keys
                         WHERE id = ?
                     ");
                     $stmt->execute([$keyId]);
                 } else {
                     $stmt = $db->prepare("
-                        DELETE FROM api_keys 
+                        DELETE FROM api_keys
                         WHERE id = ? AND organisation_id = ?
                     ");
                     $stmt->execute([$keyId, $organisationId]);
                 }
-                
+
                 if ($stmt->rowCount() > 0) {
                     $success = 'API key deleted successfully.';
                 } else {

@@ -248,6 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? 'update';
         
         if ($action === 'update') {
+            $wasActive = !empty($person['is_active']);
             $data = [
                 'first_name' => trim($_POST['first_name'] ?? ''),
                 'last_name' => trim($_POST['last_name'] ?? ''),
@@ -345,6 +346,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $success = 'Staff member updated successfully.';
                     $person = Person::findById($personId, $organisationId);
                     $organisationalUnits = Person::getOrganisationalUnits($personId);
+                    // Fire deactivation webhook if person was just made inactive
+                    if ($wasActive && empty($data['is_active'])) {
+                        WebhookService::fire('person.deactivated', [
+                            'id'      => $personId,
+                            'email'   => $person['email'] ?? null,
+                            'user_id' => $person['user_id'] ?? null,
+                        ], $organisationId);
+                    }
                 } else {
                     $error = 'Failed to update staff member.';
                 }
