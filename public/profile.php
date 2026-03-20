@@ -146,6 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'save_signature') {
             // Handle signature save (upload or digital)
             $signatureMethod = $_POST['signature_method'] ?? 'digital';
+            if (!in_array($signatureMethod, ['upload', 'digital'], true)) {
+                $signatureMethod = 'digital';
+            }
             
             // Read raw input ONCE and store it (php://input can only be read once)
             $rawInput = file_get_contents('php://input');

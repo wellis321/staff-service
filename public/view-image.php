@@ -9,8 +9,8 @@ if (empty($path)) {
     die('Invalid path');
 }
 
-// Security: prevent directory traversal
-$path = str_replace('..', '', $path);
+// Security: only allow safe path characters (alphanumerics, hyphens, underscores, dots, forward slashes)
+$path = preg_replace('/[^a-zA-Z0-9_\-\.\/]/', '', $path);
 $path = ltrim($path, '/');
 
 // Determine if this is a signature or photo based on path
@@ -74,10 +74,16 @@ if (!$allowed) {
     die('Access denied');
 }
 
-// Determine content type
+// Determine content type and restrict to images only
 $finfo = finfo_open(FILEINFO_MIME_TYPE);
 $mimeType = finfo_file($finfo, $fullPath);
 // finfo_close() is deprecated in PHP 8.5+ - finfo objects are automatically freed
+
+$allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+if (!in_array($mimeType, $allowedMimeTypes, true)) {
+    http_response_code(403);
+    die('File type not permitted');
+}
 
 // Set headers and output file
 header('Content-Type: ' . $mimeType);
