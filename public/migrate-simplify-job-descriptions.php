@@ -7,10 +7,8 @@
 
 require_once dirname(__DIR__) . '/config/config.php';
 
-// Simple security - only allow in development
-if (getenv('APP_ENV') === 'production') {
-    die('This script is not available in production.');
-}
+// Require super admin to run migrations
+RBAC::requireSuperAdmin();
 
 $db = getDbConnection();
 $errors = [];

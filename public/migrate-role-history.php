@@ -7,13 +7,8 @@
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once dirname(__DIR__, 2) . '/config/database.php';
 
-use DigitalID\SharedAuth\CSRF;
-
-// Simple authentication check
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    die('Please log in to run this migration.');
-}
+// Require super admin to run migrations
+RBAC::requireSuperAdmin();
 
 $db = getDB();
 $errors = [];
