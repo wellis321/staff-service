@@ -390,6 +390,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Failed to delete registration.';
                 }
             }
+        } elseif ($action === 'add_appraisal') {
+            $appraisalData = [
+                'person_id'           => $personId,
+                'organisation_id'     => $organisationId,
+                'appraisal_date'      => $_POST['appraisal_date'] ?? date('Y-m-d'),
+                'due_date'            => !empty($_POST['due_date']) ? $_POST['due_date'] : null,
+                'appraiser_name'      => trim($_POST['appraiser_name'] ?? ''),
+                'appraiser_person_id' => !empty($_POST['appraiser_person_id']) ? (int)$_POST['appraiser_person_id'] : null,
+                'appraisal_type'      => trim($_POST['appraisal_type'] ?? 'annual'),
+                'outcome'             => trim($_POST['outcome'] ?? 'pending'),
+                'next_due_date'       => !empty($_POST['next_due_date']) ? $_POST['next_due_date'] : null,
+                'notes'               => trim($_POST['notes'] ?? ''),
+            ];
+            if (StaffAppraisal::create($appraisalData)) {
+                $success = 'Appraisal added successfully.';
+            } else {
+                $error = 'Failed to add appraisal.';
+            }
+        } elseif ($action === 'delete_appraisal') {
+            $appraisalId = (int)($_POST['appraisal_id'] ?? 0);
+            if ($appraisalId > 0) {
+                if (StaffAppraisal::delete($appraisalId, $organisationId)) {
+                    $success = 'Appraisal deleted successfully.';
+                } else {
+                    $error = 'Failed to delete appraisal.';
+                }
+            }
+        } elseif ($action === 'add_supervision') {
+            $supervisionData = [
+                'person_id'            => $personId,
+                'organisation_id'      => $organisationId,
+                'supervision_date'     => $_POST['supervision_date'] ?? date('Y-m-d'),
+                'due_date'             => !empty($_POST['due_date']) ? $_POST['due_date'] : null,
+                'supervisor_name'      => trim($_POST['supervisor_name'] ?? ''),
+                'supervisor_person_id' => !empty($_POST['supervisor_person_id']) ? (int)$_POST['supervisor_person_id'] : null,
+                'supervision_type'     => trim($_POST['supervision_type'] ?? 'individual'),
+                'duration_minutes'     => !empty($_POST['duration_minutes']) ? (int)$_POST['duration_minutes'] : null,
+                'outcome'              => trim($_POST['outcome'] ?? ''),
+                'next_due_date'        => !empty($_POST['next_due_date']) ? $_POST['next_due_date'] : null,
+                'notes'                => trim($_POST['notes'] ?? ''),
+            ];
+            if (StaffSupervision::create($supervisionData)) {
+                $success = 'Supervision added successfully.';
+            } else {
+                $error = 'Failed to add supervision.';
+            }
+        } elseif ($action === 'delete_supervision') {
+            $supervisionId = (int)($_POST['supervision_id'] ?? 0);
+            if ($supervisionId > 0) {
+                if (StaffSupervision::delete($supervisionId, $organisationId)) {
+                    $success = 'Supervision deleted successfully.';
+                } else {
+                    $error = 'Failed to delete supervision.';
+                }
+            }
         } elseif ($action === 'add_role') {
             // Add new role history entry
             $roleData = [
@@ -834,6 +889,12 @@ include dirname(__DIR__, 2) . '/includes/header.php';
                             <a href="#section-registrations" class="sidebar-nav-link">
                                 <i class="fas fa-certificate"></i> <span>Registrations</span>
                             </a>
+                            <a href="#section-appraisals" class="sidebar-nav-link">
+                                <i class="fas fa-star"></i> <span>Appraisals</span>
+                            </a>
+                            <a href="#section-supervisions" class="sidebar-nav-link">
+                                <i class="fas fa-comments"></i> <span>Supervisions</span>
+                            </a>
                             <a href="#section-role-history" class="sidebar-nav-link">
                                 <i class="fas fa-history"></i> <span>Role History</span>
                             </a>
@@ -1262,7 +1323,251 @@ include dirname(__DIR__, 2) . '/includes/header.php';
                         </div>
                     </div>
                 <?php endif; ?>
-                
+
+                <!-- Appraisals -->
+                <?php if ($person['person_type'] === 'staff'): ?>
+                    <div id="section-appraisals" style="margin-top: 3rem; padding-top: 3rem; border-top: 1px solid #e5e7eb; scroll-margin-top: 2rem;">
+                        <h3>Appraisals</h3>
+                        <p style="color: #6b7280; margin-bottom: 1rem; font-size: 0.875rem;">
+                            Record annual and interim appraisals. Tracks who conducted the appraisal, outcome, and when the next is due.
+                        </p>
+
+                        <?php $appraisals = StaffAppraisal::getByPersonId($personId, $organisationId); ?>
+
+                        <?php if (!empty($appraisals)): ?>
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #e5e7eb; background: #f9fafb;">
+                                        <th style="padding: 0.75rem; text-align: left;">Date</th>
+                                        <th style="padding: 0.75rem; text-align: left;">Type</th>
+                                        <th style="padding: 0.75rem; text-align: left;">Appraiser</th>
+                                        <th style="padding: 0.75rem; text-align: left;">Outcome</th>
+                                        <th style="padding: 0.75rem; text-align: left;">Next Due</th>
+                                        <th style="padding: 0.75rem; text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($appraisals as $appraisal): ?>
+                                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                                            <td style="padding: 0.75rem;"><?php echo date('d/m/Y', strtotime($appraisal['appraisal_date'])); ?></td>
+                                            <td style="padding: 0.75rem;"><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $appraisal['appraisal_type']))); ?></td>
+                                            <td style="padding: 0.75rem;"><?php echo htmlspecialchars($appraisal['appraiser_full_name'] ?? $appraisal['appraiser_name'] ?? '-'); ?></td>
+                                            <td style="padding: 0.75rem;"><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $appraisal['outcome']))); ?></td>
+                                            <td style="padding: 0.75rem;"><?php echo $appraisal['next_due_date'] ? date('d/m/Y', strtotime($appraisal['next_due_date'])) : '-'; ?></td>
+                                            <td style="padding: 0.75rem; text-align: right;">
+                                                <form method="POST" action="" style="display: inline-block;">
+                                                    <?php echo CSRF::tokenField(); ?>
+                                                    <input type="hidden" name="action" value="delete_appraisal">
+                                                    <input type="hidden" name="appraisal_id" value="<?php echo $appraisal['id']; ?>">
+                                                    <button type="submit" class="btn btn-danger"
+                                                            style="padding: 0.375rem 0.75rem; font-size: 0.875rem;"
+                                                            onclick="return confirm('Delete this appraisal record?');">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        <?php if (!empty($appraisal['notes'])): ?>
+                                            <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                                                <td colspan="6" style="padding: 0.5rem 0.75rem; font-size: 0.875rem; color: #6b7280;">
+                                                    <i class="fas fa-sticky-note"></i> <?php echo nl2br(htmlspecialchars($appraisal['notes'])); ?>
+                                                </td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php else: ?>
+                            <p style="color: #6b7280; margin-bottom: 1rem;">No appraisals recorded.</p>
+                        <?php endif; ?>
+
+                        <div style="padding: 1rem; background: #f9fafb; border: 1px solid #e5e7eb; margin-bottom: 1rem;">
+                            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.875rem; font-weight: 600;">Add Appraisal</h4>
+                            <form method="POST" action="">
+                                <?php echo CSRF::tokenField(); ?>
+                                <input type="hidden" name="action" value="add_appraisal">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Appraisal Date <span style="color:#dc2626;">*</span></label>
+                                        <input type="date" name="appraisal_date" required value="<?php echo date('Y-m-d'); ?>" style="font-size: 0.875rem; padding: 0.5rem;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Type</label>
+                                        <select name="appraisal_type" style="font-size: 0.875rem; padding: 0.5rem;">
+                                            <option value="annual">Annual</option>
+                                            <option value="probationary">Probationary</option>
+                                            <option value="interim">Interim</option>
+                                            <option value="return_to_work">Return to Work</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Outcome</label>
+                                        <select name="outcome" style="font-size: 0.875rem; padding: 0.5rem;">
+                                            <option value="pending">Pending</option>
+                                            <option value="outstanding">Outstanding</option>
+                                            <option value="exceeds_expectations">Exceeds Expectations</option>
+                                            <option value="meets_expectations">Meets Expectations</option>
+                                            <option value="requires_improvement">Requires Improvement</option>
+                                            <option value="unsatisfactory">Unsatisfactory</option>
+                                            <option value="not_completed">Not Completed</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Next Due Date</label>
+                                        <input type="date" name="next_due_date" style="font-size: 0.875rem; padding: 0.5rem;">
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Appraiser Name</label>
+                                        <input type="text" name="appraiser_name" placeholder="Name of appraiser" style="font-size: 0.875rem; padding: 0.5rem;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Appraiser (Staff Member)</label>
+                                        <select name="appraiser_person_id" style="font-size: 0.875rem; padding: 0.5rem;">
+                                            <option value="">-- Select staff member --</option>
+                                            <?php foreach ($staffForManager as $s): ?>
+                                                <option value="<?php echo $s['id']; ?>"><?php echo htmlspecialchars($s['first_name'] . ' ' . $s['last_name']); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0.75rem;">
+                                    <label style="font-size: 0.875rem;">Notes</label>
+                                    <textarea name="notes" rows="2" placeholder="Any notes about the appraisal" style="font-size: 0.875rem; padding: 0.5rem; width: 100%;"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">
+                                    <i class="fas fa-plus"></i> Add Appraisal
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Supervisions -->
+                <?php if ($person['person_type'] === 'staff'): ?>
+                    <div id="section-supervisions" style="margin-top: 3rem; padding-top: 3rem; border-top: 1px solid #e5e7eb; scroll-margin-top: 2rem;">
+                        <h3>Supervisions</h3>
+                        <p style="color: #6b7280; margin-bottom: 1rem; font-size: 0.875rem;">
+                            Record regular supervision sessions. Tracks supervisor, duration, outcome, and next supervision date.
+                        </p>
+
+                        <?php $supervisions = StaffSupervision::getByPersonId($personId, $organisationId); ?>
+
+                        <?php if (!empty($supervisions)): ?>
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #e5e7eb; background: #f9fafb;">
+                                        <th style="padding: 0.75rem; text-align: left;">Date</th>
+                                        <th style="padding: 0.75rem; text-align: left;">Type</th>
+                                        <th style="padding: 0.75rem; text-align: left;">Supervisor</th>
+                                        <th style="padding: 0.75rem; text-align: left;">Duration</th>
+                                        <th style="padding: 0.75rem; text-align: left;">Next Due</th>
+                                        <th style="padding: 0.75rem; text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($supervisions as $supervision): ?>
+                                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                                            <td style="padding: 0.75rem;"><?php echo date('d/m/Y', strtotime($supervision['supervision_date'])); ?></td>
+                                            <td style="padding: 0.75rem;"><?php echo htmlspecialchars(ucfirst($supervision['supervision_type'])); ?></td>
+                                            <td style="padding: 0.75rem;"><?php echo htmlspecialchars($supervision['supervisor_full_name'] ?? $supervision['supervisor_name'] ?? '-'); ?></td>
+                                            <td style="padding: 0.75rem;"><?php echo $supervision['duration_minutes'] ? $supervision['duration_minutes'] . ' min' : '-'; ?></td>
+                                            <td style="padding: 0.75rem;"><?php echo $supervision['next_due_date'] ? date('d/m/Y', strtotime($supervision['next_due_date'])) : '-'; ?></td>
+                                            <td style="padding: 0.75rem; text-align: right;">
+                                                <form method="POST" action="" style="display: inline-block;">
+                                                    <?php echo CSRF::tokenField(); ?>
+                                                    <input type="hidden" name="action" value="delete_supervision">
+                                                    <input type="hidden" name="supervision_id" value="<?php echo $supervision['id']; ?>">
+                                                    <button type="submit" class="btn btn-danger"
+                                                            style="padding: 0.375rem 0.75rem; font-size: 0.875rem;"
+                                                            onclick="return confirm('Delete this supervision record?');">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        <?php if (!empty($supervision['outcome']) || !empty($supervision['notes'])): ?>
+                                            <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                                                <td colspan="6" style="padding: 0.5rem 0.75rem; font-size: 0.875rem; color: #6b7280;">
+                                                    <?php if (!empty($supervision['outcome'])): ?>
+                                                        <strong>Outcome:</strong> <?php echo nl2br(htmlspecialchars($supervision['outcome'])); ?><br>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($supervision['notes'])): ?>
+                                                        <i class="fas fa-sticky-note"></i> <?php echo nl2br(htmlspecialchars($supervision['notes'])); ?>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php else: ?>
+                            <p style="color: #6b7280; margin-bottom: 1rem;">No supervisions recorded.</p>
+                        <?php endif; ?>
+
+                        <div style="padding: 1rem; background: #f9fafb; border: 1px solid #e5e7eb; margin-bottom: 1rem;">
+                            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.875rem; font-weight: 600;">Add Supervision</h4>
+                            <form method="POST" action="">
+                                <?php echo CSRF::tokenField(); ?>
+                                <input type="hidden" name="action" value="add_supervision">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Supervision Date <span style="color:#dc2626;">*</span></label>
+                                        <input type="date" name="supervision_date" required value="<?php echo date('Y-m-d'); ?>" style="font-size: 0.875rem; padding: 0.5rem;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Type</label>
+                                        <select name="supervision_type" style="font-size: 0.875rem; padding: 0.5rem;">
+                                            <option value="individual">Individual</option>
+                                            <option value="group">Group</option>
+                                            <option value="peer">Peer</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Duration (minutes)</label>
+                                        <input type="number" name="duration_minutes" min="1" max="480" placeholder="e.g. 60" style="font-size: 0.875rem; padding: 0.5rem;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Next Due Date</label>
+                                        <input type="date" name="next_due_date" style="font-size: 0.875rem; padding: 0.5rem;">
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Supervisor Name</label>
+                                        <input type="text" name="supervisor_name" placeholder="Name of supervisor" style="font-size: 0.875rem; padding: 0.5rem;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Supervisor (Staff Member)</label>
+                                        <select name="supervisor_person_id" style="font-size: 0.875rem; padding: 0.5rem;">
+                                            <option value="">-- Select staff member --</option>
+                                            <?php foreach ($staffForManager as $s): ?>
+                                                <option value="<?php echo $s['id']; ?>"><?php echo htmlspecialchars($s['first_name'] . ' ' . $s['last_name']); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Outcome / Key Discussion Points</label>
+                                        <textarea name="outcome" rows="2" placeholder="Summary of what was discussed or agreed" style="font-size: 0.875rem; padding: 0.5rem; width: 100%;"></textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="font-size: 0.875rem;">Notes</label>
+                                        <textarea name="notes" rows="2" placeholder="Any additional notes" style="font-size: 0.875rem; padding: 0.5rem; width: 100%;"></textarea>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">
+                                    <i class="fas fa-plus"></i> Add Supervision
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Role History -->
                 <?php if ($person['person_type'] === 'staff'): ?>
                     <div id="section-role-history" style="margin-top: 3rem; padding-top: 3rem; border-top: 1px solid #e5e7eb; scroll-margin-top: 2rem;">

@@ -176,6 +176,16 @@ if (!class_exists('StaffLearningRecord') && file_exists(SRC_PATH . '/models/Staf
     require_once SRC_PATH . '/models/StaffLearningRecord.php';
 }
 
+// Load StaffAppraisal model explicitly if not autoloaded
+if (!class_exists('StaffAppraisal') && file_exists(SRC_PATH . '/models/StaffAppraisal.php')) {
+    require_once SRC_PATH . '/models/StaffAppraisal.php';
+}
+
+// Load StaffSupervision model explicitly if not autoloaded
+if (!class_exists('StaffSupervision') && file_exists(SRC_PATH . '/models/StaffSupervision.php')) {
+    require_once SRC_PATH . '/models/StaffSupervision.php';
+}
+
 // Calculate base URL dynamically based on document root
 // Handles Hostinger case where document root is project root but URLs include /public/
 if (!function_exists('getBaseUrl')) {

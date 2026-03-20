@@ -121,7 +121,13 @@ try {
         // Get organisational units
         $organisationalUnits = Person::getOrganisationalUnits($personId);
         $person['organisational_units'] = $organisationalUnits;
-        
+
+        // Get appraisals and supervisions (staff only)
+        if ($person['person_type'] === 'staff') {
+            $person['appraisals'] = StaffAppraisal::getByPersonId($personId, $organisationId);
+            $person['supervisions'] = StaffSupervision::getByPersonId($personId, $organisationId);
+        }
+
         // Add photo URL if an approved photo exists
         if (!empty($person['photo_path']) && ($person['photo_approval_status'] ?? '') === 'approved') {
             $person['photo_url'] = url('view-image.php?path=' . urlencode($person['photo_path']));
