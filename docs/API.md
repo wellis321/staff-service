@@ -189,6 +189,90 @@ if (!hash_equals($expectedSignature, $signature)) {
 }
 ```
 
+### Verify User
+
+Check whether a user is active in the Staff Service for a given organisation. Used by connected apps to gate access.
+
+**Endpoint**: `GET /api/verify-user.php`
+
+**Authentication**: API key only (machine-to-machine — session auth not accepted)
+
+**Query Parameters**:
+- `email` (recommended): Look up by email address
+- `user_id` (alternative): Look up by PMS user ID
+
+**Response — active user**:
+```json
+{
+  "verified": true,
+  "user": {
+    "id": 1,
+    "email": "someone@example.com",
+    "first_name": "Someone",
+    "last_name": "Somewhere",
+    "organisation_id": 1
+  }
+}
+```
+
+**Response — not active / not found**:
+```json
+{ "verified": false, "reason": "not_found" }
+{ "verified": false, "reason": "inactive" }
+{ "verified": false, "reason": "wrong_organisation" }
+```
+
+---
+
+### Authenticate User (Connected App Login)
+
+Verify a user's credentials against the Staff Service. Used by connected apps (e.g. Digital ID) to allow PMS users to log in without a separate account.
+
+**Endpoint**: `POST /api/auth-token.php`
+
+**Authentication**: API key only. The API key determines which organisation's users can be authenticated.
+
+> **Important**: This endpoint transmits passwords server-to-server. HTTPS is required in production.
+
+**Request Body (JSON)**:
+```json
+{
+  "email": "someone@example.com",
+  "password": "their-password"
+}
+```
+
+**Response — valid credentials**:
+```json
+{
+  "authenticated": true,
+  "user": {
+    "id": 1,
+    "email": "someone@example.com",
+    "first_name": "Someone",
+    "last_name": "Somewhere",
+    "organisation_id": 1,
+    "organisation_domain": "example.com"
+  }
+}
+```
+
+**Response — invalid credentials / not active**:
+```json
+{ "authenticated": false, "reason": "invalid_credentials" }
+{ "authenticated": false, "reason": "inactive" }
+{ "authenticated": false, "reason": "wrong_organisation" }
+```
+
+**How it works with Digital ID**:
+
+When a user tries to log into Digital ID and local authentication fails, Digital ID calls this endpoint. If PMS confirms the credentials:
+1. Digital ID creates or reactivates the local user account
+2. The password hash is synced so future logins work locally without hitting PMS
+3. The user is logged in automatically
+
+---
+
 ## Error Responses
 
 All error responses follow this format:

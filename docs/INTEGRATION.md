@@ -45,34 +45,31 @@ STAFF_SYNC_INTERVAL=3600
 
 ### Pattern 1: Digital ID Integration
 
-Digital ID needs staff data for ID card generation and verification.
+Digital ID uses Staff Service as the source of truth for staff data and authentication.
 
-**Data Flow**:
+**Data Flow — Staff Data**:
 1. Digital ID queries Staff Service API for staff profiles
 2. Maps Staff Service `people.id` to Digital ID `employees.id`
 3. Syncs: name, photo, employee reference, organisational units
 4. Digital ID maintains: ID card data, verification logs, check-ins
 
-**Implementation**:
-- Create `StaffServiceClient` class in Digital ID
-- Check `USE_STAFF_SERVICE` configuration flag
-- Fall back to local `employees` table if Staff Service unavailable
-- Sync staff data on-demand or periodically
+**Data Flow — User Authentication (Connected Orgs)**:
+1. User attempts to log in to Digital ID
+2. If local credentials fail, Digital ID calls `POST /api/auth-token.php` with the user's credentials
+3. Staff Service verifies credentials and returns user data
+4. Digital ID creates or reactivates the local user account and logs the user in
+5. Password hash is synced so subsequent logins work locally without hitting Staff Service
 
-**Example Code Structure**:
-```php
-// Digital ID StaffServiceClient class
-class StaffServiceClient {
-    public static function getStaffMember($personId) {
-        if (!USE_STAFF_SERVICE) {
-            return self::getFromLocalDatabase($personId);
-        }
-        
-        // Fetch from Staff Service API
-        return self::fetchFromAPI($personId);
-    }
-}
-```
+This means staff who have accounts in Staff Service can log into Digital ID automatically once the two apps are connected — no separate registration required.
+
+**Authentication Endpoints**:
+- `GET /api/verify-user.php` — confirm a user is active in Staff Service (used to gate access for existing Digital ID users)
+- `POST /api/auth-token.php` — verify credentials and return user data (used to authenticate PMS-only users into Digital ID)
+
+**Implementation**:
+- `StaffServiceClient::verifyUser($email)` — called after successful local login; denies access if PMS marks user inactive
+- `StaffServiceClient::authenticateUser($email, $password)` — called when local login fails; provisions account on success
+- Falls back gracefully if Staff Service is unreachable (fail open)
 
 ### Pattern 2: Medication App Integration (Future)
 
