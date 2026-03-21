@@ -253,6 +253,9 @@
                                     <a href="<?php echo url('staff/index.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'staff/') !== false ? 'active' : ''; ?>">
                                         <i class="fas fa-users"></i> Staff
                                     </a>
+                                    <a href="<?php echo url('staff/approve-changes.php'); ?>" class="<?php echo $isActive('approve-changes.php'); ?>">
+                                        <i class="fas fa-user-check"></i> Approve Changes
+                                    </a>
                                     <a href="<?php echo url('job-descriptions/index.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'job-descriptions/') !== false ? 'active' : ''; ?>">
                                         <i class="fas fa-file-alt"></i> Job Descriptions
                                     </a>
@@ -273,6 +276,9 @@
                             <div class="nav-dropdown-menu">
                                 <a href="<?php echo url('profile.php'); ?>" class="<?php echo $isActive('profile.php'); ?>">
                                     <i class="fas fa-user"></i> My Profile
+                                </a>
+                                <a href="<?php echo url('staff/my-profile.php'); ?>" class="<?php echo $isActive('my-profile.php'); ?>">
+                                    <i class="fas fa-id-card"></i> My Staff Details
                                 </a>
                                 <a href="<?php echo url('logout.php'); ?>">
                                     <i class="fas fa-sign-out-alt"></i> Logout
