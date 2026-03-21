@@ -47,13 +47,45 @@ if ($person['person_type'] === 'staff') {
 // Get all organisational units for organisation (for assignment)
 $db = getDbConnection();
 $stmt = $db->prepare("
-    SELECT id, name, code 
-    FROM organisational_units 
-    WHERE organisation_id = ? 
+    SELECT id, name, code
+    FROM organisational_units
+    WHERE organisation_id = ?
     ORDER BY name
 ");
 $stmt->execute([$organisationId]);
 $allUnits = $stmt->fetchAll();
+
+// Team Service integration
+$staffTeams   = TeamServiceClient::getTeamsForStaff((int) $personId, (int) $organisationId);
+$allTeams     = TeamServiceClient::enabled() ? (TeamServiceClient::getTeams((int) $organisationId) ?? []) : [];
+$teamServiceOn = TeamServiceClient::enabled();
+
+// Handle add/remove team membership POSTs
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['team_action'])) {
+    if (!CSRF::validatePost()) {
+        $error = 'Invalid security token.';
+    } elseif ($_POST['team_action'] === 'add_to_team') {
+        $teamId   = (int) ($_POST['team_id'] ?? 0);
+        $joinedAt = $_POST['joined_at'] ?? null;
+        $displayName = trim($person['first_name'] . ' ' . $person['last_name']);
+        $displayRef  = $person['employee_reference'] ?? '';
+        if ($teamId && TeamServiceClient::addStaffToTeam($teamId, (int) $organisationId, (int) $personId, $displayName, $displayRef, null, false, $joinedAt ?: null)) {
+            $success = 'Added to team.';
+            $staffTeams = TeamServiceClient::getTeamsForStaff((int) $personId, (int) $organisationId);
+        } else {
+            $error = 'Could not add to team. Please try again.';
+        }
+    } elseif ($_POST['team_action'] === 'remove_from_team') {
+        $teamId  = (int) ($_POST['team_id'] ?? 0);
+        $leftAt  = $_POST['left_at'] ?? null;
+        if ($teamId && TeamServiceClient::removeStaffFromTeam($teamId, (int) $personId, $leftAt ?: null)) {
+            $success = 'Removed from team.';
+            $staffTeams = TeamServiceClient::getTeamsForStaff((int) $personId, (int) $organisationId);
+        } else {
+            $error = 'Could not remove from team. Please try again.';
+        }
+    }
+}
 
 $pageTitle = 'View Staff Member';
 include dirname(__DIR__, 2) . '/includes/header.php';
@@ -324,6 +356,122 @@ include dirname(__DIR__, 2) . '/includes/header.php';
         </div>
     </div>
 </div>
+
+<?php if ($teamServiceOn): ?>
+<!-- ── Teams ──────────────────────────────────────────────────────────────── -->
+<div id="section-teams" style="scroll-margin-top: 2rem;"></div>
+<div class="card" style="margin-top: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h2 style="font-size: 1.1rem; font-weight: 600;">
+            <i class="fas fa-people-group" style="color: #2563eb; margin-right: 0.4rem;"></i>
+            Teams
+        </h2>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('add-team-form').style.display='block'; this.style.display='none';">
+            <i class="fas fa-plus"></i> Add to Team
+        </button>
+    </div>
+
+    <?php if ($error): ?>
+        <div class="alert alert-error" style="margin-bottom: 1rem;"><?php echo htmlspecialchars($error); ?></div>
+    <?php endif; ?>
+    <?php if ($success): ?>
+        <div class="alert alert-success" style="margin-bottom: 1rem;"><?php echo htmlspecialchars($success); ?></div>
+    <?php endif; ?>
+
+    <!-- Add to team form -->
+    <div id="add-team-form" style="display: none; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
+        <form method="POST">
+            <?php echo CSRF::tokenField(); ?>
+            <input type="hidden" name="team_action" value="add_to_team">
+            <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.75rem; align-items: end;">
+                <div>
+                    <label style="display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">Team</label>
+                    <select name="team_id" class="form-control" required>
+                        <option value="">Select a team…</option>
+                        <?php foreach ($allTeams as $t): ?>
+                            <?php
+                            // Skip teams this person is already in
+                            $alreadyIn = false;
+                            foreach (($staffTeams ?? []) as $st) {
+                                if ((int) $st['team_id'] === (int) $t['id']) { $alreadyIn = true; break; }
+                            }
+                            if ($alreadyIn) continue;
+                            ?>
+                            <option value="<?php echo $t['id']; ?>">
+                                <?php echo htmlspecialchars($t['name']); ?>
+                                <?php if ($t['type_name']): ?>(<?php echo htmlspecialchars($t['type_name']); ?>)<?php endif; ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">Start Date (optional)</label>
+                    <input type="date" name="joined_at" class="form-control" value="<?php echo date('Y-m-d'); ?>">
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                    <button type="button" class="btn btn-secondary btn-sm"
+                            onclick="document.getElementById('add-team-form').style.display='none'; document.querySelector('[onclick*=add-team-form]').style.display='';">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <?php if (empty($staffTeams)): ?>
+        <p style="color: #6b7280; text-align: center; padding: 1.5rem 0;">
+            Not a member of any teams yet.
+        </p>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Team</th>
+                        <th>Type</th>
+                        <th>Role</th>
+                        <th>Since</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($staffTeams as $tm): ?>
+                    <tr>
+                        <td>
+                            <strong><?php echo htmlspecialchars($tm['team_name']); ?></strong>
+                            <?php if (!empty($tm['is_primary_team'])): ?>
+                                <span style="font-size: 0.75rem; background: #dbeafe; color: #1e40af; border-radius: 9999px; padding: 0.1rem 0.5rem; margin-left: 0.4rem;">Primary</span>
+                            <?php endif; ?>
+                        </td>
+                        <td style="color: #6b7280; font-size: 0.875rem;">
+                            <?php echo htmlspecialchars($tm['type_name'] ?? '—'); ?>
+                        </td>
+                        <td style="font-size: 0.875rem;">
+                            <?php echo htmlspecialchars($tm['role_name'] ?? '—'); ?>
+                        </td>
+                        <td style="color: #6b7280; font-size: 0.875rem;">
+                            <?php echo $tm['joined_at'] ? date('d M Y', strtotime($tm['joined_at'])) : '—'; ?>
+                        </td>
+                        <td style="text-align: right;">
+                            <form method="POST" onsubmit="return confirm('Remove from this team?');" style="display: inline;">
+                                <?php echo CSRF::tokenField(); ?>
+                                <input type="hidden" name="team_action" value="remove_from_team">
+                                <input type="hidden" name="team_id"    value="<?php echo $tm['team_id']; ?>">
+                                <input type="hidden" name="left_at"    value="<?php echo date('Y-m-d'); ?>">
+                                <button type="submit" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-times"></i> Remove
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <?php include dirname(__DIR__, 2) . '/includes/footer.php'; ?>
 

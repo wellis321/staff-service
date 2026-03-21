@@ -907,6 +907,11 @@ include dirname(__DIR__, 2) . '/includes/header.php';
                             <a href="#section-organisational-units" class="sidebar-nav-link">
                                 <i class="fas fa-sitemap"></i> <span>Organisational Units</span>
                             </a>
+                            <?php if (TeamServiceClient::enabled()): ?>
+                            <a href="<?php echo url('staff/view.php?id=' . $personId . '#section-teams'); ?>" class="sidebar-nav-link">
+                                <i class="fas fa-people-group"></i> <span>Teams</span>
+                            </a>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </nav>
                 </div>
