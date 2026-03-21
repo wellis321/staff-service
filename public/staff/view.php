@@ -55,10 +55,12 @@ $stmt = $db->prepare("
 $stmt->execute([$organisationId]);
 $allUnits = $stmt->fetchAll();
 
-// Team Service integration
-$staffTeams   = TeamServiceClient::getTeamsForStaff((int) $personId, (int) $organisationId);
-$allTeams     = TeamServiceClient::enabled() ? (TeamServiceClient::getTeams((int) $organisationId) ?? []) : [];
+// Team Service integration — buffer output to prevent any HTTP warnings breaking the HTML
 $teamServiceOn = TeamServiceClient::enabled();
+ob_start();
+$staffTeams = $teamServiceOn ? TeamServiceClient::getTeamsForStaff((int) $personId, (int) $organisationId) : null;
+$allTeams   = $teamServiceOn ? (TeamServiceClient::getTeams((int) $organisationId) ?? []) : [];
+ob_end_clean();
 
 // Handle add/remove team membership POSTs
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['team_action'])) {

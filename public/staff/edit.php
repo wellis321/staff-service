@@ -807,6 +807,90 @@ $linkedRecords = Person::getLinkedPersonRecords($personId, $organisationId);
 $pageTitle = 'Edit Staff Member';
 include dirname(__DIR__, 2) . '/includes/header.php';
 ?>
+<style>
+/* Smooth scrolling for anchor links */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Documentation-style sidebar navigation */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    align-items: stretch;
+}
+
+.sidebar-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 1.5rem;
+    color: #374151;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 400;
+    transition: all 0.15s ease;
+    border-left: 3px solid transparent;
+    position: relative;
+    text-align: left;
+    justify-content: flex-start;
+}
+
+.sidebar-nav-link i {
+    width: 18px;
+    text-align: center;
+    font-size: 0.875rem;
+    color: #6b7280;
+    transition: color 0.15s ease;
+}
+
+.sidebar-nav-link span {
+    flex: 1;
+}
+
+.sidebar-nav-link:hover {
+    background-color: #f9fafb;
+    color: #111827;
+    border-left-color: #e5e7eb;
+}
+
+.sidebar-nav-link:hover i {
+    color: #374151;
+}
+
+/* Active section highlighting */
+.sidebar-nav-link.active,
+.sidebar-nav a.active {
+    background-color: #2563eb !important;
+    color: white !important;
+    font-weight: 500;
+    border-left-color: #2563eb;
+}
+
+.sidebar-nav-link.active i,
+.sidebar-nav a.active i {
+    color: white !important;
+}
+
+/* Sticky save button */
+.sticky-save-button {
+    position: sticky !important;
+    top: 70px !important;
+    z-index: 999 !important;
+}
+
+/* Responsive: Hide sidebar on mobile */
+@media (max-width: 968px) {
+    .profile-form-container {
+        grid-template-columns: 1fr !important;
+    }
+
+    .profile-sidebar {
+        display: none;
+    }
+}
+</style>
 
 <div class="card">
     <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
@@ -2428,91 +2512,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-<style>
-/* Smooth scrolling for anchor links */
-html {
-    scroll-behavior: smooth;
-}
-
-/* Documentation-style sidebar navigation */
-.sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-    align-items: stretch;
-}
-
-.sidebar-nav-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.625rem 1.5rem;
-    color: #374151;
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 400;
-    transition: all 0.15s ease;
-    border-left: 3px solid transparent;
-    position: relative;
-    text-align: left;
-    justify-content: flex-start;
-}
-
-.sidebar-nav-link i {
-    width: 18px;
-    text-align: center;
-    font-size: 0.875rem;
-    color: #6b7280;
-    transition: color 0.15s ease;
-}
-
-.sidebar-nav-link span {
-    flex: 1;
-}
-
-.sidebar-nav-link:hover {
-    background-color: #f9fafb;
-    color: #111827;
-    border-left-color: #e5e7eb;
-}
-
-.sidebar-nav-link:hover i {
-    color: #374151;
-}
-
-/* Active section highlighting - docs style with blue background and white text */
-.sidebar-nav-link.active,
-.sidebar-nav a.active {
-    background-color: #2563eb !important;
-    color: white !important;
-    font-weight: 500;
-    border-left-color: #2563eb;
-}
-
-.sidebar-nav-link.active i,
-.sidebar-nav a.active i {
-    color: white !important;
-}
-
-/* Sticky save button - positioned below header */
-.sticky-save-button {
-    position: sticky !important;
-    top: 70px !important;
-    z-index: 999 !important;
-}
-
-/* Responsive: Hide sidebar on mobile */
-@media (max-width: 968px) {
-    .profile-form-container {
-        grid-template-columns: 1fr !important;
-    }
-    
-    .profile-sidebar {
-        display: none;
-    }
-}
-</style>
 
 <?php include dirname(__DIR__, 2) . '/includes/footer.php'; ?>
 
