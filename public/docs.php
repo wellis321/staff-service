@@ -177,6 +177,10 @@ include INCLUDES_PATH . '/header.php';
                 <i class="fas fa-user"></i>
                 <span>Staff Profiles</span>
             </a>
+            <a href="#self-service" class="docs-sidebar-nav-link">
+                <i class="fas fa-id-card"></i>
+                <span>Staff Self-Service</span>
+            </a>
             <a href="#learning-history" class="docs-sidebar-nav-link">
                 <i class="fas fa-link"></i>
                 <span>Learning History & Record Linking</span>
@@ -211,7 +215,7 @@ include INCLUDES_PATH . '/header.php';
                 <li><strong>API & MCP Integration</strong> - Connect with existing systems without duplication</li>
                 <li><strong>Complete Data Ownership</strong> - Your data stays yours, no vendor lock-in</li>
                 <li><strong>Bidirectional Sync</strong> - Keep all systems in sync automatically</li>
-                <li><strong>Staff Self-Service</strong> - Staff can update their own details with verification workflows</li>
+                <li><strong>Staff Self-Service</strong> - Staff can update their own personal details; sensitive changes are held for line manager approval before taking effect</li>
                 <li><strong>Digital Signatures</strong> - Capture and store staff signatures digitally</li>
                 <li><strong>Compliance Alerts</strong> - Automatic monitoring of registrations and qualifications</li>
                 <li><strong>Persistent Learning History</strong> - Link staff records to preserve training and skills across role changes</li>
@@ -227,11 +231,12 @@ include INCLUDES_PATH . '/header.php';
             <p>Once your organisation has access:</p>
             <ol>
                 <li>Register for an account using your organisation email address</li>
-                <li>Log in to access your profile</li>
-                <li>Update your personal details, contact information, and emergency contacts</li>
-                <li>Upload your profile photo (subject to admin approval)</li>
-                <li>Add your digital signature for contracts and agreements</li>
+                <li>Log in and go to <strong>My Profile → My Staff Details</strong> in the top navigation</li>
+                <li>Update your personal details — emergency contacts save immediately; other changes (name, address, bank details) are sent to your line manager for approval</li>
+                <li>Upload your profile photo and signature — both require manager approval before going live</li>
+                <li>You will be notified by email and by an in-app badge when your manager approves or rejects a change</li>
             </ol>
+            <p>See the <a href="#self-service">Staff Self-Service</a> section for a full explanation of which fields you can edit and how the approval process works.</p>
             
             <h3>For Administrators</h3>
             <p>As an organisation administrator, you can:</p>
@@ -239,7 +244,7 @@ include INCLUDES_PATH . '/header.php';
                 <li>Create and manage staff profiles</li>
                 <li>Link staff to user accounts</li>
                 <li>Assign staff to organisational units</li>
-                <li>Review and approve staff profile updates</li>
+                <li>Review and approve self-service profile updates via <strong>Admin → Approve Changes</strong></li>
                 <li>Manage job descriptions and job posts</li>
                 <li>Export staff data for reporting</li>
             </ul>
@@ -402,32 +407,36 @@ Authorization: Bearer YOUR_API_KEY</code></pre>
         
         <section id="staff-profiles" class="docs-section">
             <h2>Staff Profiles</h2>
-            <p>Each staff member has a comprehensive profile containing:</p>
-            
+            <p>Each staff member has a comprehensive profile. Fields are divided between those managed by administrators (employment data) and those the staff member can update themselves (personal data). See <a href="#self-service">Staff Self-Service</a> for details on the approval workflow.</p>
+
             <h3>Personal Information</h3>
+            <p><em>Staff can update these themselves via My Staff Details.</em></p>
             <ul>
-                <li>Name, date of birth, contact details</li>
-                <li>Emergency contacts</li>
-                <li>Profile photo</li>
-                <li>Digital signature</li>
+                <li>Name and date of birth <em>(requires manager approval)</em></li>
+                <li>Phone number <em>(saves immediately)</em></li>
+                <li>Emergency contacts <em>(saves immediately — no approval delay)</em></li>
+                <li>Home address <em>(requires manager approval)</em></li>
+                <li>Profile photo <em>(requires manager approval)</em></li>
+                <li>Digital signature <em>(requires manager approval — only the staff member can change their own signature)</em></li>
             </ul>
-            
-            <h3>Employment Details</h3>
-            <ul>
-                <li>Job title and job post</li>
-                <li>Employment start date</li>
-                <li>Line manager</li>
-                <li>Organisational unit assignments</li>
-                <li>Contract type and status</li>
-            </ul>
-            
+
             <h3>Financial & Identification</h3>
+            <p><em>Staff can update these themselves, but all changes require manager approval before taking effect.</em></p>
             <ul>
                 <li>National Insurance number</li>
-                <li>Bank account details</li>
-                <li>Address information</li>
+                <li>Bank sort code, account number, and account name</li>
             </ul>
-            
+
+            <h3>Employment Details</h3>
+            <p><em>Managed by administrators only.</em></p>
+            <ul>
+                <li>Job title and job post</li>
+                <li>Employment start and end dates</li>
+                <li>Line manager</li>
+                <li>Organisational unit assignments</li>
+                <li>Contracted hours and place of work</li>
+            </ul>
+
             <h3>Compliance & Qualifications</h3>
             <ul>
                 <li>Professional registrations</li>
@@ -435,8 +444,9 @@ Authorization: Bearer YOUR_API_KEY</code></pre>
                 <li>Learning records</li>
                 <li>Role history</li>
             </ul>
-            
+
             <h3>Leave Management</h3>
+            <p><em>Managed by administrators only.</em></p>
             <ul>
                 <li>Annual leave allocation and usage</li>
                 <li>Time in lieu</li>
@@ -444,6 +454,106 @@ Authorization: Bearer YOUR_API_KEY</code></pre>
             </ul>
         </section>
         
+        <section id="self-service" class="docs-section">
+            <h2>Staff Self-Service</h2>
+            <p>Staff members can update their own personal details without needing to ask an administrator. To protect the integrity of the data, most changes are held in a queue and reviewed by the staff member's line manager before they take effect.</p>
+
+            <h3>How to update your details</h3>
+            <ol>
+                <li>Log in and click <strong>My Profile</strong> in the top navigation</li>
+                <li>Select <strong>My Staff Details</strong> from the dropdown</li>
+                <li>Edit the fields you want to change and click <strong>Save Changes</strong></li>
+                <li>For photos and signatures, use the upload forms at the bottom of the page</li>
+            </ol>
+
+            <h3>Which changes need approval?</h3>
+            <p>Not all changes are treated the same. Emergency contact details are applied immediately because delays could cause real harm. Everything else with personal or financial significance is held for your manager to review first.</p>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem;">
+                <thead>
+                    <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
+                        <th style="text-align: left; padding: 0.6rem 0.75rem;">Field</th>
+                        <th style="text-align: left; padding: 0.6rem 0.75rem;">Applied</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.6rem 0.75rem;">Emergency contact name &amp; phone</td>
+                        <td style="padding: 0.6rem 0.75rem; color: #10b981; font-weight: 600;"><i class="fas fa-check-circle"></i> Immediately</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.6rem 0.75rem;">Phone number</td>
+                        <td style="padding: 0.6rem 0.75rem; color: #10b981; font-weight: 600;"><i class="fas fa-check-circle"></i> Immediately</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.6rem 0.75rem;">First name, last name</td>
+                        <td style="padding: 0.6rem 0.75rem; color: #f59e0b; font-weight: 600;"><i class="fas fa-clock"></i> Awaits manager approval</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.6rem 0.75rem;">Date of birth</td>
+                        <td style="padding: 0.6rem 0.75rem; color: #f59e0b; font-weight: 600;"><i class="fas fa-clock"></i> Awaits manager approval</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.6rem 0.75rem;">Home address</td>
+                        <td style="padding: 0.6rem 0.75rem; color: #f59e0b; font-weight: 600;"><i class="fas fa-clock"></i> Awaits manager approval</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.6rem 0.75rem;">National Insurance number</td>
+                        <td style="padding: 0.6rem 0.75rem; color: #f59e0b; font-weight: 600;"><i class="fas fa-clock"></i> Awaits manager approval</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.6rem 0.75rem;">Bank account details</td>
+                        <td style="padding: 0.6rem 0.75rem; color: #f59e0b; font-weight: 600;"><i class="fas fa-clock"></i> Awaits manager approval</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.6rem 0.75rem;">Profile photo</td>
+                        <td style="padding: 0.6rem 0.75rem; color: #f59e0b; font-weight: 600;"><i class="fas fa-clock"></i> Awaits manager approval</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.6rem 0.75rem;">Signature</td>
+                        <td style="padding: 0.6rem 0.75rem; color: #f59e0b; font-weight: 600;"><i class="fas fa-clock"></i> Awaits manager approval</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 1rem; margin: 1rem 0;">
+                <p style="margin: 0; color: #92400e;"><strong>Important:</strong> Each field is reviewed independently. A manager can approve your new address while rejecting a photo, for example. You do not need to resubmit all fields — only the ones that were rejected.</p>
+            </div>
+
+            <h3>The approval chain</h3>
+            <p>Pending changes are routed to the right person automatically based on your line manager setting:</p>
+            <ul>
+                <li>Your changes go to your <strong>line manager</strong> for review</li>
+                <li>If your line manager also submits changes to their own profile, those go to <strong>their</strong> line manager</li>
+                <li>This continues up the chain — no one approves their own changes</li>
+                <li>Staff at the top of the chain (no line manager assigned) have their changes reviewed by an <strong>organisation administrator or HR</strong></li>
+            </ul>
+
+            <h3>Notifications</h3>
+            <p>The system notifies both parties at each step so nothing gets missed:</p>
+            <ul>
+                <li><strong>When you submit a change</strong> — your manager receives an email and sees a red badge on the <em>Approve Changes</em> menu item</li>
+                <li><strong>When your manager reviews a change</strong> — you receive an email and see a blue badge on the <em>My Staff Details</em> menu item</li>
+                <li>Visiting <em>My Staff Details</em> clears your badge and shows the full history of approved and rejected changes with any reasons given</li>
+            </ul>
+
+            <h3>If your change is rejected</h3>
+            <p>Your manager must provide a written reason when rejecting a change. You will see this reason in your email notification and in the change history at the bottom of your <em>My Staff Details</em> page. You can then correct the submission and resubmit — resubmitting a field automatically replaces the previous pending request for that field.</p>
+
+            <h3>For managers: reviewing changes</h3>
+            <ol>
+                <li>Click <strong>Admin → Approve Changes</strong> in the navigation (a red badge shows how many are waiting)</li>
+                <li>Each pending change shows the current value alongside the proposed value so you can compare them directly</li>
+                <li>For photos and signatures, both images are displayed side by side</li>
+                <li>Click <strong>Approve</strong> to apply the change immediately, or <strong>Reject</strong> to decline it with a reason</li>
+                <li>You can approve and reject individual fields independently within the same submission</li>
+            </ol>
+
+            <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem 0;">
+                <p style="margin: 0; color: #1e40af;"><strong>Note for administrators:</strong> If a staff member has no line manager assigned, their pending changes will appear in your approval inbox under a separate "No Line Manager Assigned" section. This ensures no change is ever left without a reviewer.</p>
+            </div>
+        </section>
+
         <section id="learning-history" class="docs-section">
             <h2>Learning History & Record Linking</h2>
             <p>The Staff Service includes powerful features for maintaining complete learning and skills history, even when staff change roles or return to your organisation with different employee numbers.</p>
@@ -636,8 +746,9 @@ Authorization: Bearer YOUR_API_KEY</code></pre>
             <h3>Role-Based Access Control</h3>
             <p>Access is controlled through role-based permissions:</p>
             <ul>
-                <li><strong>Staff Members</strong> - Can view and edit their own profile</li>
-                <li><strong>Organisation Administrators</strong> - Can manage all staff in their organisation</li>
+                <li><strong>Staff Members</strong> - Can view and update their own personal details via <em>My Staff Details</em>; sensitive changes require line manager approval before taking effect</li>
+                <li><strong>Line Managers</strong> - Can review and approve or reject profile change requests from their direct reports via <em>Approve Changes</em></li>
+                <li><strong>Organisation Administrators</strong> - Can manage all staff in their organisation and act as approver for staff with no line manager assigned</li>
                 <li><strong>Super Administrators</strong> - Can manage organisations and system-wide settings</li>
             </ul>
             

@@ -30,6 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $keyName = trim($_POST['key_name'] ?? '');
             $targetOrganisationId = $isSuperAdmin && isset($_POST['organisation_id']) ? (int)$_POST['organisation_id'] : $organisationId;
             
+            $connectedApp = trim($_POST['connected_app'] ?? '');
+
             if (empty($keyName)) {
                 $error = 'API key name is required.';
             } elseif (!$targetOrganisationId && !$isSuperAdmin) {
@@ -38,14 +40,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Generate API key
                 $apiKey = bin2hex(random_bytes(32)); // 64-character hex string
                 $apiKeyHash = hash('sha256', $apiKey);
-                
+
                 try {
                     $stmt = $db->prepare("
                         INSERT INTO api_keys (
-                            user_id, organisation_id, name, api_key_hash, is_active
-                        ) VALUES (?, ?, ?, ?, TRUE)
+                            user_id, organisation_id, name, connected_app, api_key_hash, is_active
+                        ) VALUES (?, ?, ?, ?, ?, TRUE)
                     ");
-                    $stmt->execute([$userId, $targetOrganisationId, $keyName, $apiKeyHash]);
+                    $stmt->execute([$userId, $targetOrganisationId, $keyName, $connectedApp ?: null, $apiKeyHash]);
                     
                     $newApiKey = $apiKey;
                     $newApiKeyName = $keyName;
@@ -153,22 +155,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get all API keys (for super admin, show all; for org admin, show only their organisation's)
 if ($isSuperAdmin) {
     $stmt = $db->prepare("
-        SELECT ak.id, ak.name, ak.is_active, ak.created_at, ak.last_used_at, ak.expires_at,
+        SELECT ak.id, ak.name, ak.connected_app, ak.is_active, ak.created_at, ak.last_used_at, ak.expires_at,
                u.email as user_email, o.name as organisation_name, o.domain as organisation_domain
         FROM api_keys ak
         JOIN users u ON ak.user_id = u.id
         LEFT JOIN organisations o ON ak.organisation_id = o.id
-        ORDER BY ak.created_at DESC
+        ORDER BY COALESCE(ak.connected_app, ak.name), ak.created_at DESC
     ");
     $stmt->execute();
 } else {
     $stmt = $db->prepare("
-        SELECT ak.id, ak.name, ak.is_active, ak.created_at, ak.last_used_at, ak.expires_at,
+        SELECT ak.id, ak.name, ak.connected_app, ak.is_active, ak.created_at, ak.last_used_at, ak.expires_at,
                u.email as user_email
         FROM api_keys ak
         JOIN users u ON ak.user_id = u.id
         WHERE ak.organisation_id = ?
-        ORDER BY ak.created_at DESC
+        ORDER BY COALESCE(ak.connected_app, ak.name), ak.created_at DESC
     ");
     $stmt->execute([$organisationId]);
 }
@@ -220,17 +222,29 @@ include INCLUDES_PATH . '/header.php';
                 <h4 style="margin-top: 0; color: #1e40af; font-size: 0.875rem;">
                     <i class="fas fa-info-circle"></i> How to Use This API Key
                 </h4>
-                <p style="margin: 0.5rem 0 0; color: #1e40af; font-size: 0.875rem;">
-                    <strong>For Digital ID Integration:</strong> Add this key to your Digital ID application's <code>.env</code> file:
-                </p>
-                <pre style="margin: 0.5rem 0 0; padding: 0.75rem; background: white; border-radius: 0.25rem; overflow-x: auto; font-size: 0.875rem; color: #1f2937;"><code>USE_STAFF_SERVICE=true
-STAFF_SERVICE_URL=http://localhost:8000
+                <?php
+                $connectedAppCreated = trim($_POST['connected_app'] ?? '');
+                $isDigitalId = stripos($connectedAppCreated, 'digital id') !== false || stripos($connectedAppCreated, 'digitalid') !== false;
+                ?>
+                <?php if ($isDigitalId): ?>
+                    <p style="margin: 0.5rem 0 0; color: #1e40af; font-size: 0.875rem;">
+                        Add this key to your <strong>Digital ID</strong> application's <code>.env</code> file:
+                    </p>
+                    <pre style="margin: 0.5rem 0 0; padding: 0.75rem; background: white; border-radius: 0.25rem; overflow-x: auto; font-size: 0.875rem; color: #1f2937;"><code>USE_STAFF_SERVICE=true
+STAFF_SERVICE_URL=<?php echo htmlspecialchars(APP_URL); ?>
+
 STAFF_SERVICE_API_KEY=<?php echo htmlspecialchars($newApiKey); ?>
+
 STAFF_SYNC_INTERVAL=3600</code></pre>
-                <p style="margin: 0.5rem 0 0; color: #1e40af; font-size: 0.875rem;">
-                    <strong>For API Requests:</strong> Use it in API requests with the header:
-                    <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: white; border-radius: 0.25rem; font-size: 0.875rem;">Authorization: Bearer <?php echo htmlspecialchars($newApiKey); ?></code>
-                </p>
+                <?php else: ?>
+                    <p style="margin: 0.5rem 0 0; color: #1e40af; font-size: 0.875rem;">
+                        Add this key to your application's configuration and pass it on every API request using the header:
+                    </p>
+                    <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: white; border-radius: 0.25rem; font-size: 0.875rem; color: #1f2937;">Authorization: Bearer <?php echo htmlspecialchars($newApiKey); ?></code>
+                    <p style="margin: 0.5rem 0 0; color: #1e40af; font-size: 0.875rem;">
+                        Alternatively use the <code>X-API-Key</code> header. See the <a href="<?php echo url('docs.php#api-integration'); ?>" style="color: #1e40af;">API documentation</a> for endpoint details.
+                    </p>
+                <?php endif; ?>
             </div>
         </div>
     <?php endif; ?>
@@ -267,16 +281,38 @@ STAFF_SYNC_INTERVAL=3600</code></pre>
             <?php endif; ?>
             
             <div class="form-group">
-                <label for="key_name">API Key Name</label>
-                <input type="text" 
-                       id="key_name" 
-                       name="key_name" 
-                       required 
-                       placeholder="e.g., Digital ID Integration, Recruitment System"
-                       maxlength="255">
-                <small>Give this API key a descriptive name to identify what it's used for.</small>
+                <label for="connected_app">Connected Application</label>
+                <input type="text"
+                       id="connected_app"
+                       name="connected_app"
+                       list="connected_app_suggestions"
+                       placeholder="e.g., Digital ID, Finance System"
+                       maxlength="100"
+                       value="<?php echo htmlspecialchars($_POST['connected_app'] ?? ''); ?>">
+                <datalist id="connected_app_suggestions">
+                    <option value="Digital ID">
+                    <option value="Finance System">
+                    <option value="HR System">
+                    <option value="LMS">
+                    <option value="Recruitment System">
+                    <option value="Microsoft Entra / 365">
+                    <option value="Payroll System">
+                </datalist>
+                <small>Which system will use this key? Choose from the suggestions or type your own. Helps you identify keys at a glance and group them in the table below.</small>
             </div>
-            
+
+            <div class="form-group">
+                <label for="key_name">Key Label <span style="color: #6b7280; font-weight: normal;">(optional — useful if you have multiple keys for the same app)</span></label>
+                <input type="text"
+                       id="key_name"
+                       name="key_name"
+                       required
+                       placeholder="e.g., Production, Staging, Read-only"
+                       maxlength="255"
+                       value="<?php echo htmlspecialchars($_POST['key_name'] ?? ''); ?>">
+                <small>A short label to distinguish this key from others for the same application.</small>
+            </div>
+
             <button type="submit" class="btn btn-primary" <?php echo (!$organisationId && !$isSuperAdmin) ? 'disabled' : ''; ?>>
                 <i class="fas fa-key"></i> Create API Key
             </button>
@@ -290,10 +326,25 @@ STAFF_SYNC_INTERVAL=3600</code></pre>
             <p style="color: #6b7280;">No API keys have been created yet.</p>
         <?php else: ?>
             <div style="overflow-x: auto;">
+                <?php
+                // Group keys by connected_app for display
+                $grouped = [];
+                foreach ($apiKeys as $key) {
+                    $group = $key['connected_app'] ?: 'Untagged';
+                    $grouped[$group][] = $key;
+                }
+                ksort($grouped);
+                // Put 'Untagged' last
+                if (isset($grouped['Untagged'])) {
+                    $untagged = $grouped['Untagged'];
+                    unset($grouped['Untagged']);
+                    $grouped['Untagged'] = $untagged;
+                }
+                ?>
                 <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
                     <thead>
                         <tr style="border-bottom: 2px solid #e5e7eb; background: #f9fafb;">
-                            <th style="padding: 0.75rem; text-align: left;">Name</th>
+                            <th style="padding: 0.75rem; text-align: left;">Label</th>
                             <?php if ($isSuperAdmin): ?>
                                 <th style="padding: 0.75rem; text-align: left;">Organisation</th>
                             <?php endif; ?>
@@ -306,7 +357,25 @@ STAFF_SYNC_INTERVAL=3600</code></pre>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($apiKeys as $key): ?>
+                        <?php foreach ($grouped as $appName => $keys): ?>
+                            <tr>
+                                <td colspan="<?php echo $isSuperAdmin ? 8 : 7; ?>"
+                                    style="padding: 0.5rem 0.75rem; background: #f3f4f6; border-top: 2px solid #e5e7eb; border-bottom: 1px solid #e5e7eb;">
+                                    <span style="font-weight: 600; font-size: 0.875rem; color: #374151;">
+                                        <i class="fas fa-<?php echo $appName === 'Untagged' ? 'tag' : 'plug'; ?>"></i>
+                                        <?php echo htmlspecialchars($appName); ?>
+                                    </span>
+                                    <span style="color: #9ca3af; font-size: 0.8rem; margin-left: 0.5rem;">
+                                        <?php echo count($keys); ?> key<?php echo count($keys) !== 1 ? 's' : ''; ?>
+                                        <?php
+                                        $activeCount = count(array_filter($keys, fn($k) => $k['is_active']));
+                                        if ($activeCount > 0): ?>
+                                            &mdash; <span style="color: #059669;"><?php echo $activeCount; ?> active</span>
+                                        <?php endif; ?>
+                                    </span>
+                                </td>
+                            </tr>
+                        <?php foreach ($keys as $key): ?>
                             <tr style="border-bottom: 1px solid #e5e7eb;">
                                 <td style="padding: 0.75rem;">
                                     <strong><?php echo htmlspecialchars($key['name']); ?></strong>
@@ -408,7 +477,8 @@ STAFF_SYNC_INTERVAL=3600</code></pre>
                                     </div>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php endforeach; // $keys ?>
+                        <?php endforeach; // $grouped ?>
                     </tbody>
                 </table>
             </div>
@@ -421,11 +491,12 @@ STAFF_SYNC_INTERVAL=3600</code></pre>
         </h3>
         <ul style="margin: 0.5rem 0 0; padding-left: 1.5rem; color: #1e40af;">
             <li>API keys allow external systems to authenticate with Staff Service</li>
-            <li>Each key is associated with your organisation and user account</li>
-            <li>Keys are shown only once when created - save them securely</li>
-            <li>You can deactivate keys without deleting them (useful for temporary access)</li>
-            <li>Deleting a key permanently removes it and cannot be undone</li>
-            <li>Keys can be used in the <code>Authorization: Bearer</code> header for API requests</li>
+            <li>Tag each key with a <strong>Connected Application</strong> so you can see at a glance which system uses it — keys are grouped by app in the table above</li>
+            <li>You can create multiple keys for the same app (e.g. Production and Staging) — they all work simultaneously</li>
+            <li>Keys are shown only once when created — save them securely</li>
+            <li>You can deactivate a key without deleting it, which is useful when rotating to a new key</li>
+            <li>Deleting a key permanently revokes access for that system and cannot be undone</li>
+            <li>Pass the key using <code>Authorization: Bearer &lt;key&gt;</code> or the <code>X-API-Key</code> header</li>
         </ul>
     </div>
 </div>
