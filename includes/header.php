@@ -206,11 +206,61 @@
                 <button class="mobile-menu-toggle" aria-label="Toggle menu" style="display: none;">
                     <i class="fas fa-bars"></i>
                 </button>
-                <?php 
+                <?php
                 $currentPage = basename($_SERVER['PHP_SELF']);
                 $isActive = function($page) use ($currentPage) {
                     return $currentPage === $page ? 'active' : '';
                 };
+
+                // ── Notification badge counts ──────────────────────────────
+                // Cached in session to avoid a DB query on every single page load.
+                // Cleared when the relevant page is visited (see my-profile.php,
+                // approve-changes.php) or on logout.
+                $navBadgeManagerCount = 0;
+                $navBadgeStaffCount   = 0;
+
+                if (Auth::isLoggedIn()) {
+                    $navCacheKey = 'nav_badge_ts';
+                    $navCacheTtl = 60; // seconds before re-querying
+
+                    $now = time();
+                    $lastFetch = $_SESSION[$navCacheKey] ?? 0;
+
+                    if (($now - $lastFetch) > $navCacheTtl) {
+                        // Refresh counts
+                        $_SESSION[$navCacheKey] = $now;
+
+                        $navOrgId  = Auth::getOrganisationId();
+                        $navUserId = Auth::getUserId();
+                        $navDb     = getDbConnection();
+
+                        // Find the linked person record (cached in session)
+                        if (empty($_SESSION['nav_person_id'])) {
+                            $navStmt = $navDb->prepare("
+                                SELECT id FROM people WHERE user_id = ? AND organisation_id = ? LIMIT 1
+                            ");
+                            $navStmt->execute([$navUserId, $navOrgId]);
+                            $navPersonRow = $navStmt->fetch(PDO::FETCH_ASSOC);
+                            $_SESSION['nav_person_id'] = $navPersonRow ? (int) $navPersonRow['id'] : 0;
+                        }
+
+                        $navPersonId = (int) $_SESSION['nav_person_id'];
+
+                        if ($navPersonId > 0) {
+                            // Staff badge: unseen reviewed changes
+                            $navBadgeStaffCount = PendingProfileChange::getUnseenReviewedCountForStaff($navPersonId);
+                            $_SESSION['nav_badge_staff'] = $navBadgeStaffCount;
+
+                            // Manager badge: pending approvals for my direct reports
+                            $navBadgeManagerCount = PendingProfileChange::getPendingCountForManager($navPersonId, $navOrgId);
+                            $_SESSION['nav_badge_manager'] = $navBadgeManagerCount;
+                        }
+                    } else {
+                        // Use cached values
+                        $navBadgeStaffCount   = $_SESSION['nav_badge_staff']   ?? 0;
+                        $navBadgeManagerCount = $_SESSION['nav_badge_manager'] ?? 0;
+                    }
+                }
                 ?>
                 <?php if (Auth::isLoggedIn()): ?>
                     <div class="nav-links" data-menu-state="closed">
@@ -253,8 +303,13 @@
                                     <a href="<?php echo url('staff/index.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'staff/') !== false ? 'active' : ''; ?>">
                                         <i class="fas fa-users"></i> Staff
                                     </a>
-                                    <a href="<?php echo url('staff/approve-changes.php'); ?>" class="<?php echo $isActive('approve-changes.php'); ?>">
-                                        <i class="fas fa-user-check"></i> Approve Changes
+                                    <a href="<?php echo url('staff/approve-changes.php'); ?>" class="<?php echo $isActive('approve-changes.php'); ?>" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                                        <span><i class="fas fa-user-check"></i> Approve Changes</span>
+                                        <?php if ($navBadgeManagerCount > 0): ?>
+                                            <span style="background: #ef4444; color: white; border-radius: 9999px; padding: 1px 7px; font-size: 0.7rem; font-weight: 700; line-height: 1.5;">
+                                                <?php echo $navBadgeManagerCount; ?>
+                                            </span>
+                                        <?php endif; ?>
                                     </a>
                                     <a href="<?php echo url('job-descriptions/index.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'job-descriptions/') !== false ? 'active' : ''; ?>">
                                         <i class="fas fa-file-alt"></i> Job Descriptions
@@ -277,8 +332,13 @@
                                 <a href="<?php echo url('profile.php'); ?>" class="<?php echo $isActive('profile.php'); ?>">
                                     <i class="fas fa-user"></i> My Profile
                                 </a>
-                                <a href="<?php echo url('staff/my-profile.php'); ?>" class="<?php echo $isActive('my-profile.php'); ?>">
-                                    <i class="fas fa-id-card"></i> My Staff Details
+                                <a href="<?php echo url('staff/my-profile.php'); ?>" class="<?php echo $isActive('my-profile.php'); ?>" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                                    <span><i class="fas fa-id-card"></i> My Staff Details</span>
+                                    <?php if ($navBadgeStaffCount > 0): ?>
+                                        <span style="background: #2563eb; color: white; border-radius: 9999px; padding: 1px 7px; font-size: 0.7rem; font-weight: 700; line-height: 1.5;">
+                                            <?php echo $navBadgeStaffCount; ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </a>
                                 <a href="<?php echo url('logout.php'); ?>">
                                     <i class="fas fa-sign-out-alt"></i> Logout

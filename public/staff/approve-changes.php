@@ -78,6 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Force the nav badge cache to refresh next page load
+$_SESSION['nav_badge_ts'] = 0;
+
 // ─── Load pending changes ──────────────────────────────────────────────────────
 $myTeamChanges   = $managerPersonId
     ? PendingProfileChange::getPendingForManager($managerPersonId, $organisationId)

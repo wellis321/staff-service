@@ -52,6 +52,9 @@ if (!$person) {
 
 $personId = (int) $person['id'];
 
+// Mark any approved/rejected changes as seen — clears the nav badge
+PendingProfileChange::markReviewedAsSeen($personId);
+
 // ─── Handle form submission ────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!CSRF::validatePost()) {

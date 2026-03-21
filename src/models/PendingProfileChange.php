@@ -270,6 +270,58 @@ class PendingProfileChange {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // -------------------------------------------------------------------------
+    // Notification badge counts
+    // -------------------------------------------------------------------------
+
+    /**
+     * Number of pending changes awaiting a given manager's review.
+     * Used for the nav badge — lightweight COUNT only.
+     */
+    public static function getPendingCountForManager(int $managerPersonId, int $organisationId): int {
+        $db = getDbConnection();
+        $stmt = $db->prepare("
+            SELECT COUNT(*) FROM pending_profile_changes ppc
+            JOIN staff_profiles sp ON ppc.person_id = sp.person_id
+            WHERE sp.line_manager_id = ?
+              AND ppc.organisation_id = ?
+              AND ppc.status = 'pending'
+        ");
+        $stmt->execute([$managerPersonId, $organisationId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Number of reviewed (approved/rejected) changes the staff member has not yet seen.
+     * Used for the nav badge on "My Staff Details".
+     */
+    public static function getUnseenReviewedCountForStaff(int $personId): int {
+        $db = getDbConnection();
+        $stmt = $db->prepare("
+            SELECT COUNT(*) FROM pending_profile_changes
+            WHERE person_id = ?
+              AND status IN ('approved', 'rejected')
+              AND seen_by_staff_at IS NULL
+        ");
+        $stmt->execute([$personId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Mark all reviewed changes for a person as seen (clears the badge).
+     * Call this when the staff member loads their profile page.
+     */
+    public static function markReviewedAsSeen(int $personId): void {
+        $db = getDbConnection();
+        $db->prepare("
+            UPDATE pending_profile_changes
+            SET seen_by_staff_at = NOW()
+            WHERE person_id = ?
+              AND status IN ('approved', 'rejected')
+              AND seen_by_staff_at IS NULL
+        ")->execute([$personId]);
+    }
+
     /**
      * Find a single change by ID.
      */
