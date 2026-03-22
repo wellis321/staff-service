@@ -299,6 +299,9 @@
                                         <a href="<?php echo url('admin/api-keys.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'admin/api-keys.php') !== false ? 'active' : ''; ?>">
                                             <i class="fas fa-key"></i> API Keys
                                         </a>
+                                        <a href="<?php echo url('admin/integrations.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'admin/integrations.php') !== false ? 'active' : ''; ?>">
+                                            <i class="fas fa-plug"></i> Integrations
+                                        </a>
                                     <?php endif; ?>
                                     <a href="<?php echo url('staff/index.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'staff/') !== false ? 'active' : ''; ?>">
                                         <i class="fas fa-users"></i> Staff

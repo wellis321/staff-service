@@ -991,7 +991,7 @@ html {
                             <a href="#section-organisational-units" class="sidebar-nav-link">
                                 <i class="fas fa-sitemap"></i> <span>Organisational Units</span>
                             </a>
-                            <?php if (TeamServiceClient::enabled()): ?>
+                            <?php if (TeamServiceClient::enabled((int) $organisationId)): ?>
                             <a href="<?php echo url('staff/view.php?id=' . $personId . '#section-teams'); ?>" class="sidebar-nav-link">
                                 <i class="fas fa-people-group"></i> <span>Teams</span>
                             </a>

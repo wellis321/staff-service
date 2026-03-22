@@ -56,7 +56,7 @@ $stmt->execute([$organisationId]);
 $allUnits = $stmt->fetchAll();
 
 // Team Service integration — buffer output to prevent any HTTP warnings breaking the HTML
-$teamServiceOn = TeamServiceClient::enabled();
+$teamServiceOn = TeamServiceClient::enabled((int) $organisationId);
 ob_start();
 $staffTeams = $teamServiceOn ? TeamServiceClient::getTeamsForStaff((int) $personId, (int) $organisationId) : null;
 $allTeams   = $teamServiceOn ? (TeamServiceClient::getTeams((int) $organisationId) ?? []) : [];
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['team_action'])) {
     } elseif ($_POST['team_action'] === 'remove_from_team') {
         $teamId  = (int) ($_POST['team_id'] ?? 0);
         $leftAt  = $_POST['left_at'] ?? null;
-        if ($teamId && TeamServiceClient::removeStaffFromTeam($teamId, (int) $personId, $leftAt ?: null)) {
+        if ($teamId && TeamServiceClient::removeStaffFromTeam($teamId, (int) $organisationId, (int) $personId, $leftAt ?: null)) {
             $success = 'Removed from team.';
             $staffTeams = TeamServiceClient::getTeamsForStaff((int) $personId, (int) $organisationId);
         } else {
