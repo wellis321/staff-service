@@ -285,8 +285,11 @@
                                 </div>
                                 <div class="nav-dropdown-menu">
                                     <?php if (RBAC::isSuperAdmin()): ?>
+                                        <a href="<?php echo url('admin/organisations.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'admin/organisations.php') !== false ? 'active' : ''; ?>">
+                                            <i class="fas fa-building"></i> Organisations
+                                        </a>
                                         <a href="<?php echo url('admin/organisation-requests.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'admin/organisation-requests.php') !== false ? 'active' : ''; ?>">
-                                            <i class="fas fa-building"></i> Organisation Requests
+                                            <i class="fas fa-inbox"></i> Organisation Requests
                                         </a>
                                         <a href="<?php echo url('admin/users.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'admin/users.php') !== false ? 'active' : ''; ?>">
                                             <i class="fas fa-users-cog"></i> Manage Users
