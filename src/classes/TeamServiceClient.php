@@ -162,6 +162,17 @@ class TeamServiceClient
     }
 
     /**
+     * Get all active staff memberships for an org, with team names.
+     * Returns a flat array; each row has team_id, team_name, external_id, display_name, etc.
+     * Used by the staff list page to build the grouped-by-team view.
+     */
+    public static function getAllStaffMemberships(int $orgId): ?array
+    {
+        $res = self::get($orgId, '/api/members.php?all=1&member_type=staff&organisation_id=' . $orgId);
+        return $res['data'] ?? null;
+    }
+
+    /**
      * Get all active teams for an organisation (for the "add to team" dropdown).
      */
     public static function getTeams(int $orgId): ?array
