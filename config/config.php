@@ -45,9 +45,11 @@ define('APP_URL', getenv('APP_URL') ?: 'http://localhost');
 // Contact email - Main super admin and point of contact
 define('CONTACT_EMAIL', getenv('CONTACT_EMAIL') ?: 'digital-ids@outlook.com');
 
-// Cross-service URLs (set in .env for each environment)
-define('TEAM_SERVICE_URL',   rtrim(getenv('TEAM_SERVICE_URL')   ?: '', '/'));
-define('PEOPLE_SERVICE_URL', rtrim(getenv('PEOPLE_SERVICE_URL') ?: '', '/'));
+// Cross-service URLs and keys (set in .env for each environment)
+define('TEAM_SERVICE_URL',      rtrim(getenv('TEAM_SERVICE_URL')      ?: '', '/'));
+define('PEOPLE_SERVICE_URL',    rtrim(getenv('PEOPLE_SERVICE_URL')    ?: '', '/'));
+// Shared secret used to authenticate cross-service org provisioning calls
+define('PROVISION_SECRET',      getenv('PROVISION_SECRET')            ?: '');
 
 // Security
 define('CSRF_TOKEN_NAME', 'csrf_token');

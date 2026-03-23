@@ -182,6 +182,62 @@ class TeamServiceClient
     }
 
     /**
+     * Look up the remote org ID for a given domain.
+     * Returns the remote org_id or null if not found / service unreachable.
+     */
+    public static function orgLookup(string $url, string $apiKey, string $domain): ?int
+    {
+        $url = rtrim($url, '/') . '/api/org-lookup.php?domain=' . urlencode($domain);
+        $ctx = stream_context_create([
+            'http' => [
+                'method'        => 'GET',
+                'header'        => 'Authorization: Bearer ' . $apiKey . "\r\nAccept: application/json\r\n",
+                'timeout'       => 5,
+                'ignore_errors' => true,
+            ],
+        ]);
+        $body = @file_get_contents($url, false, $ctx);
+        if ($body === false) return null;
+        $data = json_decode($body, true);
+        return isset($data['org_id']) ? (int) $data['org_id'] : null;
+    }
+
+    /**
+     * Provision a new organisation on the Team Service.
+     * Uses PROVISION_SECRET — not an org API key.
+     * Returns the remote org_id on success, null on failure.
+     */
+    public static function provisionOrg(
+        string $name,
+        string $domain,
+        string $firstName,
+        string $lastName,
+        string $email,
+        string $password
+    ): ?int {
+        $baseUrl = rtrim(getenv('TEAM_SERVICE_URL') ?: TEAM_SERVICE_URL, '/');
+        $secret  = PROVISION_SECRET;
+        if (!$baseUrl || !$secret) return null;
+
+        $payload = json_encode(compact('name', 'domain', 'firstName', 'lastName', 'email', 'password'));
+        $ctx = stream_context_create([
+            'http' => [
+                'method'        => 'POST',
+                'header'        => 'Authorization: Bearer ' . $secret . "\r\n" .
+                                   'Content-Type: application/json' . "\r\n" .
+                                   'Content-Length: ' . strlen($payload) . "\r\n",
+                'content'       => $payload,
+                'timeout'       => 10,
+                'ignore_errors' => true,
+            ],
+        ]);
+        $body = @file_get_contents($baseUrl . '/api/org-provision.php', false, $ctx);
+        if ($body === false) return null;
+        $data = json_decode($body, true);
+        return !empty($data['success']) ? (int) $data['org_id'] : null;
+    }
+
+    /**
      * Test connection for a specific URL and key (used by settings page).
      */
     public static function testConnection(string $url, string $apiKey): bool

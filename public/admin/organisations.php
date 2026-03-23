@@ -56,7 +56,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     RBAC::assignRole($userId, 'organisation_admin');
 
                     $db->commit();
-                    $success = "Organisation <strong>" . htmlspecialchars($name) . "</strong> created. Admin: " . htmlspecialchars($email);
+
+                    // ── Provision in connected services ────────────────────
+                    $provisionLog = [];
+
+                    $teamOrgId = TeamServiceClient::provisionOrg($name, $domain, $firstName, $lastName, $email, $password);
+                    if ($teamOrgId) {
+                        OrgSettings::set($orgId, 'team_service_remote_org_id', (string) $teamOrgId);
+                        $provisionLog[] = 'Team Service ✓';
+                    } elseif (TEAM_SERVICE_URL && PROVISION_SECRET) {
+                        $provisionLog[] = 'Team Service (error — provision manually)';
+                    }
+
+                    $peopleOrgId = PeopleServiceClient::provisionOrg($name, $domain, $firstName, $lastName, $email, $password);
+                    if ($peopleOrgId) {
+                        OrgSettings::set($orgId, 'people_service_remote_org_id', (string) $peopleOrgId);
+                        $provisionLog[] = 'People Service ✓';
+                    } elseif (PEOPLE_SERVICE_URL && PROVISION_SECRET) {
+                        $provisionLog[] = 'People Service (error — provision manually)';
+                    }
+
+                    $suffix = $provisionLog ? ' — also provisioned in: ' . implode(', ', $provisionLog) : '';
+                    $success = "Organisation <strong>" . htmlspecialchars($name) . "</strong> created. Admin: " . htmlspecialchars($email) . $suffix;
                 } catch (PDOException $e) {
                     $db->rollBack();
                     $error = str_contains($e->getMessage(), 'Duplicate')
