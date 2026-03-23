@@ -157,7 +157,7 @@ include INCLUDES_PATH . '/header.php';
         </div>
         <div class="sc-foot">
             <?php if (TEAM_SERVICE_URL): ?>
-            <a href="<?php echo htmlspecialchars(TEAM_SERVICE_URL); ?>/landing.php" class="team" target="_blank" rel="noopener">
+            <a href="<?php echo htmlspecialchars(TEAM_SERVICE_URL); ?>/landing.php" class="team" target="_blank" rel="noopener noreferrer">
                 <i class="fas fa-arrow-up-right-from-square"></i> Visit Team Service
             </a>
             <?php else: ?>
@@ -185,7 +185,7 @@ include INCLUDES_PATH . '/header.php';
         </div>
         <div class="sc-foot">
             <?php if (PEOPLE_SERVICE_URL): ?>
-            <a href="<?php echo htmlspecialchars(PEOPLE_SERVICE_URL); ?>/landing.php" class="people" target="_blank" rel="noopener">
+            <a href="<?php echo htmlspecialchars(PEOPLE_SERVICE_URL); ?>/landing.php" class="people" target="_blank" rel="noopener noreferrer">
                 <i class="fas fa-arrow-up-right-from-square"></i> Visit People Service
             </a>
             <?php else: ?>
