@@ -82,32 +82,31 @@ include dirname(__DIR__, 2) . '/includes/header.php';
 <?php endif; ?>
 
 <!-- ── Controls ────────────────────────────────────────────────────────────── -->
-<div class="card" style="margin-bottom:1rem">
-    <form method="GET" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
-        <div class="form-group" style="flex:1;min-width:200px;margin-bottom:0">
-            <label for="search">Search</label>
+<div class="card" style="margin-bottom:1.25rem;padding:1rem 1.5rem">
+    <form method="GET" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
+        <div style="flex:1;min-width:220px;position:relative">
+            <i class="fas fa-search" style="position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:var(--clr-muted);font-size:.8rem;pointer-events:none"></i>
             <input type="text" id="search" name="search" class="form-control"
+                   style="padding-left:2.25rem;margin:0"
                    value="<?php echo htmlspecialchars($search); ?>"
-                   placeholder="Name, email, employee reference…">
+                   placeholder="Name, email or reference…">
         </div>
-        <div class="form-group" style="margin-bottom:0;display:flex;align-items:center;gap:.4rem;padding-top:1.5rem">
-            <input type="checkbox" id="show_inactive" name="show_inactive" value="1"
-                   <?php echo !$activeOnly ? 'checked' : ''; ?>>
-            <label for="show_inactive" style="margin:0;font-weight:400">Show inactive</label>
-        </div>
-        <button type="submit" class="btn btn-secondary"><i class="fas fa-search"></i> Search</button>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.875rem;color:var(--clr-muted);white-space:nowrap;cursor:pointer">
+            <input type="checkbox" name="show_inactive" value="1" <?php echo !$activeOnly ? 'checked' : ''; ?>>
+            Show inactive
+        </label>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Search</button>
         <?php if (!empty($search) || !$activeOnly): ?>
-            <a href="<?php echo url('staff/index.php'); ?>" class="btn btn-secondary">
+            <a href="<?php echo url('staff/index.php'); ?>" class="btn btn-secondary btn-sm">
                 <i class="fas fa-times"></i> Clear
             </a>
         <?php endif; ?>
-        <a href="<?php echo url('staff/search-learning.php'); ?>" class="btn btn-secondary">
-            <i class="fas fa-graduation-cap"></i> Learning Records
+        <a href="<?php echo url('staff/search-learning.php'); ?>" class="btn btn-secondary btn-sm">
+            <i class="fas fa-graduation-cap"></i> Learning
         </a>
 
-        <!-- View toggle -->
         <?php if ($teamServiceOn && is_array($memberships)): ?>
-        <div style="margin-left:auto;display:flex;gap:.5rem">
+        <div style="margin-left:auto;display:flex;gap:.375rem">
             <button type="button" id="btn-grouped" class="btn btn-secondary btn-sm" onclick="setView('grouped')">
                 <i class="fas fa-layer-group"></i> By Team
             </button>
@@ -212,7 +211,7 @@ include dirname(__DIR__, 2) . '/includes/header.php';
 function renderStaffTable(array $members, array $teamMap, bool $showTeamCol): string
 {
     if (empty($members)) {
-        return '<p class="text-light" style="padding:1rem">No staff in this group.</p>';
+        return '<p class="text-light" style="padding:1rem 1.5rem">No staff in this group.</p>';
     }
     ob_start();
     ?>
@@ -223,7 +222,6 @@ function renderStaffTable(array $members, array $teamMap, bool $showTeamCol): st
                     <th>Name</th>
                     <th>Ref</th>
                     <th>Email</th>
-                    <th>Job title</th>
                     <?php if ($showTeamCol): ?><th>Teams</th><?php endif; ?>
                     <th>Status</th>
                     <th></th>
@@ -231,21 +229,37 @@ function renderStaffTable(array $members, array $teamMap, bool $showTeamCol): st
             </thead>
             <tbody>
                 <?php foreach ($members as $m): ?>
+                <?php
+                    $initials  = strtoupper(substr($m['first_name'], 0, 1) . substr($m['last_name'], 0, 1));
+                    $avClass   = 'av-' . strtolower(substr($m['first_name'], 0, 1));
+                    $jobTitle  = $m['job_title'] ?? null;
+                    $teams     = $teamMap[(int)$m['id']] ?? [];
+                ?>
                 <tr>
                     <td>
-                        <a href="<?php echo url('staff/view.php?id=' . $m['id']); ?>" style="font-weight:500">
-                            <?php echo htmlspecialchars($m['first_name'] . ' ' . $m['last_name']); ?>
-                        </a>
+                        <div class="staff-name-cell">
+                            <span class="staff-avatar <?php echo htmlspecialchars($avClass); ?>"><?php echo htmlspecialchars($initials); ?></span>
+                            <div>
+                                <a href="<?php echo url('staff/view.php?id=' . $m['id']); ?>" class="staff-name">
+                                    <?php echo htmlspecialchars($m['first_name'] . ' ' . $m['last_name']); ?>
+                                </a>
+                                <?php if ($jobTitle): ?>
+                                    <div class="staff-title"><?php echo htmlspecialchars($jobTitle); ?></div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </td>
                     <td class="text-light text-small"><?php echo htmlspecialchars($m['employee_reference'] ?? '—'); ?></td>
                     <td class="text-light text-small"><?php echo htmlspecialchars($m['user_email'] ?? $m['email'] ?? '—'); ?></td>
-                    <td class="text-light text-small"><?php echo htmlspecialchars($m['job_title'] ?? '—'); ?></td>
                     <?php if ($showTeamCol): ?>
                     <td class="text-small">
-                        <?php
-                        $teams = $teamMap[(int)$m['id']] ?? [];
-                        echo $teams ? implode(', ', array_map('htmlspecialchars', array_unique($teams))) : '<span class="text-light">—</span>';
-                        ?>
+                        <?php if ($teams): ?>
+                            <?php foreach (array_unique($teams) as $t): ?>
+                                <span class="badge badge-teal" style="margin:.1rem .1rem .1rem 0"><?php echo htmlspecialchars($t); ?></span>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <span class="text-light">—</span>
+                        <?php endif; ?>
                     </td>
                     <?php endif; ?>
                     <td>
@@ -256,11 +270,11 @@ function renderStaffTable(array $members, array $teamMap, bool $showTeamCol): st
                         <?php endif; ?>
                     </td>
                     <td style="text-align:right;white-space:nowrap">
-                        <a href="<?php echo url('staff/view.php?id=' . $m['id']); ?>" class="btn btn-secondary btn-sm">
+                        <a href="<?php echo url('staff/view.php?id=' . $m['id']); ?>" class="btn btn-secondary btn-sm" title="View">
                             <i class="fas fa-eye"></i>
                         </a>
-                        <a href="<?php echo url('staff/edit.php?id=' . $m['id']); ?>" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-edit"></i>
+                        <a href="<?php echo url('staff/edit.php?id=' . $m['id']); ?>" class="btn btn-secondary btn-sm" title="Edit">
+                            <i class="fas fa-pen"></i>
                         </a>
                     </td>
                 </tr>
