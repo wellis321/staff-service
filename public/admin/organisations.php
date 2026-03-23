@@ -119,7 +119,7 @@ include INCLUDES_PATH . '/header.php';
                 <?php foreach ($orgs as $org): ?>
                 <tr>
                     <td><strong><?php echo htmlspecialchars($org['name']); ?></strong></td>
-                    <td class="text-light"><?php echo htmlspecialchars($org['domain']); ?></td>
+                    <td class="text-light"><?php echo htmlspecialchars($org['domain'] ?? ''); ?></td>
                     <td><?php echo $org['user_count']; ?></td>
                     <td class="text-light text-small">
                         <?php echo $org['last_activity'] ? date('d M Y', strtotime($org['last_activity'])) : 'Never'; ?>
