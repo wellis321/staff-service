@@ -13,15 +13,20 @@
             </div>
             
             <div class="footer-section">
-                <h3>Resources</h3>
+                <h3>Our Platform</h3>
                 <ul>
-                    <li><a href="<?php echo url('docs.php'); ?>">Documentation</a></li>
-                    <li><a href="<?php echo url('api/staff-data.php'); ?>">API Documentation</a></li>
-                    <li><a href="<?php echo url('security.php'); ?>">Security & Privacy</a></li>
+                    <li><a href="<?php echo url('services.php'); ?>">All Services</a></li>
+                    <?php if (defined('TEAM_SERVICE_URL') && TEAM_SERVICE_URL): ?>
+                    <li><a href="<?php echo htmlspecialchars(TEAM_SERVICE_URL); ?>/landing.php" target="_blank" rel="noopener"><i class="fas fa-people-group" style="color:#2563eb;margin-right:.3rem"></i> Team Service</a></li>
+                    <?php endif; ?>
+                    <?php if (defined('PEOPLE_SERVICE_URL') && PEOPLE_SERVICE_URL): ?>
+                    <li><a href="<?php echo htmlspecialchars(PEOPLE_SERVICE_URL); ?>/landing.php" target="_blank" rel="noopener"><i class="fas fa-heart-pulse" style="color:#7c3aed;margin-right:.3rem"></i> People Service</a></li>
+                    <?php endif; ?>
+                    <li><a href="<?php echo url('api/staff-data.php'); ?>">Staff API</a></li>
                     <li><a href="<?php echo url('contact.php'); ?>">Support</a></li>
                 </ul>
             </div>
-            
+
             <div class="footer-section">
                 <h3>Legal</h3>
                 <ul>
