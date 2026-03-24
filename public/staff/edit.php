@@ -2412,61 +2412,52 @@ document.addEventListener('DOMContentLoaded', function() {
     var navLinks = [].slice.call(document.querySelectorAll('.sidebar-nav a[href^="#"]'));
     if (!navLinks.length) return;
 
-    // Build sections list from nav link hrefs
-    var sections = [];
-    navLinks.forEach(function(link) {
-        var el = document.querySelector(link.getAttribute('href'));
-        if (el) sections.push(el);
-    });
+    var clickScrolling = false;
 
-    // Handle nav link clicks — smooth scroll
+    function setActive(id) {
+        navLinks.forEach(function(l) { l.classList.remove('active'); });
+        var link = document.querySelector('.sidebar-nav a[href="#' + id + '"]');
+        if (link) link.classList.add('active');
+    }
+
+    // Click handler: set active immediately and suppress observer during smooth scroll
     navLinks.forEach(function(link) {
         link.addEventListener('click', function(e) {
             var href = this.getAttribute('href');
             if (href && href.startsWith('#')) {
                 e.preventDefault();
-                var target = document.getElementById(href.substring(1));
+                var id = href.substring(1);
+                var target = document.getElementById(id);
                 if (target) {
-                    navLinks.forEach(function(l) { l.classList.remove('active'); });
-                    this.classList.add('active');
+                    clickScrolling = true;
+                    setActive(id);
                     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setTimeout(function() { clickScrolling = false; }, 1000);
                 }
             }
         });
     });
 
-    // Update active state on scroll
-    function updateActiveSection() {
-        var scrollPos = window.scrollY + 150;
-        sections.forEach(function(section) {
-            // Use absolute document position (sections are inside a positioned container)
-            var rect = section.getBoundingClientRect();
-            var top    = rect.top + window.scrollY;
-            var bottom = top + section.offsetHeight;
-            var id = section.getAttribute('id');
-            if (scrollPos >= top && scrollPos < bottom) {
-                navLinks.forEach(function(link) {
-                    var href = link.getAttribute('href');
-                    if (href && href.startsWith('#')) {
-                        link.classList.remove('active');
-                        if (href === '#' + id) link.classList.add('active');
-                    }
-                });
-            }
-        });
-    }
-
     // If URL has a hash on load, highlight that link immediately
     if (window.location.hash) {
-        var initLink = document.querySelector('.sidebar-nav a[href="' + window.location.hash + '"]');
-        if (initLink) {
-            navLinks.forEach(function(l) { l.classList.remove('active'); });
-            initLink.classList.add('active');
-        }
+        var initId = window.location.hash.slice(1);
+        setActive(initId);
     }
 
-    window.addEventListener('scroll', updateActiveSection, { passive: true });
-    updateActiveSection();
+    // Scroll-spy: use IntersectionObserver to update active state as sections scroll into view
+    if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function(entries) {
+            if (clickScrolling) return;
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) setActive(entry.target.id);
+            });
+        }, { rootMargin: '-10% 0px -80% 0px' });
+
+        navLinks.forEach(function(link) {
+            var el = document.querySelector(link.getAttribute('href'));
+            if (el) observer.observe(el);
+        });
+    }
 });
 
 // Signature pad functionality for edit page
