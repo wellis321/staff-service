@@ -2408,45 +2408,57 @@ if (wtdOptOutCheckbox) {
 }
 
 // Sidebar navigation active section highlighting
-document.addEventListener('DOMContentLoaded', function() {
-    const sections = document.querySelectorAll('[id^="section-"]');
-    const navLinks = document.querySelectorAll('.sidebar-nav a');
+window.addEventListener('load', function() {
+    var links = [].slice.call(document.querySelectorAll('.sidebar-nav a[href^="#"]'));
+    if (!links.length) return;
 
-    function setActive(id) {
-        navLinks.forEach(link => {
-            const href = link.getAttribute('href');
-            link.classList.toggle('active', href === '#' + id || href.endsWith('#' + id));
-        });
+    function getDocTop(el) {
+        // Absolute distance from document top — reliable across all layout types
+        return el.getBoundingClientRect().top + window.scrollY;
     }
 
-    function updateActiveSection() {
-        let current = '';
-        sections.forEach(section => {
-            // getBoundingClientRect().top is viewport-relative — works correctly
-            // regardless of nested containers or position:relative parents
-            if (section.getBoundingClientRect().top <= 160) {
-                current = section.getAttribute('id');
+    function sync() {
+        var scrollY = window.scrollY;
+        var threshold = scrollY + 140;
+        var best = null, bestTop = -Infinity;
+
+        links.forEach(function(link) {
+            var target = document.querySelector(link.getAttribute('href'));
+            if (!target) return;
+            var top = getDocTop(target);
+            // The section whose top is closest to (but not past) the threshold
+            if (top <= threshold && top > bestTop) {
+                bestTop = top;
+                best = link;
             }
         });
-        if (current) setActive(current);
+
+        links.forEach(function(l) { l.classList.remove('active'); });
+        if (best) best.classList.add('active');
     }
 
-    // Set active from URL hash immediately (handles direct links like #section-registrations)
-    function applyHash() {
-        const hash = window.location.hash.replace('#', '');
-        if (hash) {
-            setActive(hash);
-        } else {
-            updateActiveSection();
+    window.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('hashchange', function() {
+        // Immediately highlight on hash click, then sync takes over on scroll
+        var id = window.location.hash.slice(1);
+        var link = document.querySelector('.sidebar-nav a[href="#' + id + '"]');
+        if (link) {
+            links.forEach(function(l) { l.classList.remove('active'); });
+            link.classList.add('active');
+        }
+    });
+
+    // Initial state
+    if (window.location.hash) {
+        var id = window.location.hash.slice(1);
+        var link = document.querySelector('.sidebar-nav a[href="#' + id + '"]');
+        if (link) {
+            links.forEach(function(l) { l.classList.remove('active'); });
+            link.classList.add('active');
         }
     }
-
-    window.addEventListener('scroll', updateActiveSection);
-    window.addEventListener('hashchange', applyHash);
-
-    // Run after a short delay so the browser has finished scrolling to the anchor
-    applyHash();
-    setTimeout(applyHash, 100);
+    // Also run position-based sync after everything has settled
+    setTimeout(sync, 300);
 });
 
 // Signature pad functionality for edit page
