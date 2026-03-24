@@ -167,12 +167,18 @@ include INCLUDES_PATH . '/header.php';
 
         <?php
         // ── Registration alerts widget ─────────────────────────────────────────
-        if ($organisationId):
-            $expiring = StaffRegistration::findByOrganisation($organisationId);
-            $urgent   = array_filter($expiring, fn($r) => in_array($r['reg_status'], ['expiring_critical','expired']));
-            $due      = array_filter($expiring, fn($r) => $r['reg_status'] === 'expiring_soon');
-            $needsAttention = count($urgent) + count($due);
-        endif;
+        $needsAttention = 0;
+        $expiring = $urgent = $due = [];
+        if ($organisationId) {
+            try {
+                $expiring = StaffRegistration::findByOrganisation($organisationId);
+                $urgent   = array_filter($expiring, fn($r) => in_array($r['reg_status'], ['expiring_critical','expired']));
+                $due      = array_filter($expiring, fn($r) => $r['reg_status'] === 'expiring_soon');
+                $needsAttention = count($urgent) + count($due);
+            } catch (Throwable $e) {
+                error_log('Registration widget failed: ' . $e->getMessage());
+            }
+        }
 
         if ($organisationId && $needsAttention > 0):
         ?>

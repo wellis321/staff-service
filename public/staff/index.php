@@ -30,8 +30,14 @@ if (!empty($search)) {
 $totalPages = ceil($totalCount / $perPage);
 
 // ── Team Service — fetch memberships for grouped view ─────────────────────────
-$teamServiceOn  = TeamServiceClient::enabled($organisationId);
-$memberships    = $teamServiceOn ? TeamServiceClient::getAllStaffMemberships($organisationId) : null;
+try {
+    $teamServiceOn = TeamServiceClient::enabled($organisationId);
+    $memberships   = $teamServiceOn ? TeamServiceClient::getAllStaffMemberships($organisationId) : null;
+} catch (Throwable $e) {
+    error_log('TeamServiceClient failed on staff list: ' . $e->getMessage());
+    $teamServiceOn = false;
+    $memberships   = null;
+}
 
 // Build map: staff_id (external_id) => [team names]
 $staffTeamMap = [];

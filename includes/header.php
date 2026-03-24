@@ -247,13 +247,18 @@
                         $navPersonId = (int) $_SESSION['nav_person_id'];
 
                         if ($navPersonId > 0) {
-                            // Staff badge: unseen reviewed changes
-                            $navBadgeStaffCount = PendingProfileChange::getUnseenReviewedCountForStaff($navPersonId);
-                            $_SESSION['nav_badge_staff'] = $navBadgeStaffCount;
+                            try {
+                                // Staff badge: unseen reviewed changes
+                                $navBadgeStaffCount = PendingProfileChange::getUnseenReviewedCountForStaff($navPersonId);
+                                $_SESSION['nav_badge_staff'] = $navBadgeStaffCount;
 
-                            // Manager badge: pending approvals for my direct reports
-                            $navBadgeManagerCount = PendingProfileChange::getPendingCountForManager($navPersonId, $navOrgId);
-                            $_SESSION['nav_badge_manager'] = $navBadgeManagerCount;
+                                // Manager badge: pending approvals for my direct reports
+                                $navBadgeManagerCount = PendingProfileChange::getPendingCountForManager($navPersonId, $navOrgId);
+                                $_SESSION['nav_badge_manager'] = $navBadgeManagerCount;
+                            } catch (Throwable $e) {
+                                // Table may not exist yet — degrade gracefully
+                                error_log('Nav badge query failed: ' . $e->getMessage());
+                            }
                         }
                     } else {
                         // Use cached values

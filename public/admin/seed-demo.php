@@ -2,10 +2,12 @@
 /**
  * PMS — Demo Data Seeder
  *
- * Two actions:
- *   seed  — Creates the Sunrise Care org, admin, and 6 staff (each with a login).
- *   users — Adds logins to existing demo staff (use if org already exists from an
- *            earlier seed run that didn't create user accounts).
+ * Three actions:
+ *   seed      — Creates the Sunrise Care org, admin, and 6 staff (each with a login).
+ *   add_users — Adds logins to existing demo staff (use if org already exists from an
+ *               earlier seed run that didn't create user accounts).
+ *   enrich    — Adds contact details, emergency contacts, notes, and SSSC registration
+ *               records with varied expiry statuses to the existing demo staff.
  *
  * Super admin access only.
  */
@@ -116,6 +118,199 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && CSRF::validatePost()) {
         }
     }
 
+    // ── Action: enrich demo profiles with contact details + registrations ────
+    if ($action === 'enrich') {
+        try {
+            $existing = $db->prepare('SELECT id FROM organisations WHERE domain = ? LIMIT 1');
+            $existing->execute(['sunrisecare.demo']);
+            $orgId = $existing->fetchColumn();
+
+            if (!$orgId) {
+                $error = 'Demo organisation not found. Run the full seed first.';
+            } else {
+                $db->beginTransaction();
+
+                // Today = 2026-03-24 (kept as relative offsets so it stays realistic)
+                $today = new DateTime();
+
+                // Per-staff enrichment data keyed by employee_reference
+                $enrichData = [
+                    'EMP001' => [
+                        'phone'                  => '07741 123456',
+                        'emergency_contact_name'  => 'David Johnson',
+                        'emergency_contact_phone' => '07700 900123',
+                        'notes'                  => 'Registered Manager since 2018. Responsible for CQC compliance and staff supervision across all shifts.',
+                        'registrations'          => [
+                            [
+                                'type'         => 'SSSC — Manager of a Care Home Service for Adults',
+                                'number'       => 'SC123456',
+                                'body'         => 'Scottish Social Services Council',
+                                'issue_date'   => (clone $today)->modify('-4 years')->format('Y-m-d'),
+                                'expiry_offset' => '+9 days',   // expiring_critical
+                                'renewal_submitted' => (clone $today)->modify('-5 days')->format('Y-m-d'),
+                                'required'     => true,
+                            ],
+                        ],
+                    ],
+                    'EMP002' => [
+                        'phone'                  => '07742 234567',
+                        'emergency_contact_name'  => 'Li Chen',
+                        'emergency_contact_phone' => '07700 900234',
+                        'notes'                  => 'Deputy Manager. Acts as Registered Manager in Sarah\'s absence. Leads staff training programme.',
+                        'registrations'          => [
+                            [
+                                'type'         => 'SSSC — Deputy Manager of a Care Home Service for Adults',
+                                'number'       => 'SC234567',
+                                'body'         => 'Scottish Social Services Council',
+                                'issue_date'   => (clone $today)->modify('-5 years')->format('Y-m-d'),
+                                'expiry_offset' => '-42 days',  // expired
+                                'renewal_submitted' => null,
+                                'required'     => true,
+                            ],
+                        ],
+                    ],
+                    'EMP003' => [
+                        'phone'                  => '07743 345678',
+                        'emergency_contact_name'  => 'Peter Williams',
+                        'emergency_contact_phone' => '07700 900345',
+                        'notes'                  => 'Senior Support Worker. Mentors new staff during induction. Key worker for 4 service users.',
+                        'registrations'          => [
+                            [
+                                'type'         => 'SSSC — Senior Worker in a Care Home Service for Adults',
+                                'number'       => 'SC345678',
+                                'body'         => 'Scottish Social Services Council',
+                                'issue_date'   => (clone $today)->modify('-3 years')->format('Y-m-d'),
+                                'expiry_offset' => '+52 days',  // expiring_soon
+                                'renewal_submitted' => null,
+                                'required'     => true,
+                            ],
+                        ],
+                    ],
+                    'EMP004' => [
+                        'phone'                  => '07744 456789',
+                        'emergency_contact_name'  => 'Claire Taylor',
+                        'emergency_contact_phone' => '07700 900456',
+                        'notes'                  => 'Support Worker. Completed SVQ Level 2 in Social Services and Healthcare. Works primarily day shifts.',
+                        'registrations'          => [
+                            [
+                                'type'         => 'SSSC — Worker in a Care Home Service for Adults',
+                                'number'       => 'SC456789',
+                                'body'         => 'Scottish Social Services Council',
+                                'issue_date'   => (clone $today)->modify('-2 years')->format('Y-m-d'),
+                                'expiry_offset' => '+302 days', // active
+                                'renewal_submitted' => null,
+                                'required'     => true,
+                            ],
+                        ],
+                    ],
+                    'EMP005' => [
+                        'phone'                  => '07745 567890',
+                        'emergency_contact_name'  => 'Mark Davies',
+                        'emergency_contact_phone' => '07700 900567',
+                        'notes'                  => 'Support Worker. Joined January 2022. SVQ Level 3 in progress. Bilingual (English/Welsh).',
+                        'registrations'          => [
+                            [
+                                'type'         => 'SSSC — Worker in a Care Home Service for Adults',
+                                'number'       => 'SC567890',
+                                'body'         => 'Scottish Social Services Council',
+                                'issue_date'   => (clone $today)->modify('-2 years')->format('Y-m-d'),
+                                'expiry_offset' => '+38 days',  // expiring_soon
+                                'renewal_submitted' => null,
+                                'required'     => true,
+                            ],
+                        ],
+                    ],
+                    'EMP006' => [
+                        'phone'                  => '07746 678901',
+                        'emergency_contact_name'  => 'Susan Brown',
+                        'emergency_contact_phone' => '07700 900678',
+                        'notes'                  => 'Night Support Worker. Sole carer on night shifts. First Aid qualified. Preferred contact: text only during daytime.',
+                        'registrations'          => [
+                            [
+                                'type'         => 'SSSC — Worker in a Care Home Service for Adults',
+                                'number'       => 'SC678901',
+                                'body'         => 'Scottish Social Services Council',
+                                'issue_date'   => (clone $today)->modify('-1 year')->format('Y-m-d'),
+                                'expiry_offset' => '+351 days', // active
+                                'renewal_submitted' => null,
+                                'required'     => true,
+                            ],
+                        ],
+                    ],
+                ];
+
+                $updatePhone = $db->prepare('
+                    UPDATE people SET phone = ?
+                    WHERE organisation_id = ? AND employee_reference = ?
+                ');
+                $updateProfile = $db->prepare('
+                    UPDATE staff_profiles sp
+                    JOIN people p ON p.id = sp.person_id
+                    SET sp.emergency_contact_name = ?,
+                        sp.emergency_contact_phone = ?,
+                        sp.notes = ?
+                    WHERE p.organisation_id = ? AND p.employee_reference = ?
+                ');
+                $insertReg = $db->prepare('
+                    INSERT INTO staff_registrations
+                        (person_id, organisation_id, registration_type, registration_number, registration_body,
+                         issue_date, expiry_date, renewal_submitted_at, is_active, is_required_for_role)
+                    SELECT p.id, p.organisation_id, ?, ?, ?, ?, ?, ?, 1, ?
+                    FROM people p
+                    WHERE p.organisation_id = ? AND p.employee_reference = ?
+                    AND NOT EXISTS (
+                        SELECT 1 FROM staff_registrations sr
+                        WHERE sr.person_id = p.id AND sr.registration_number = ?
+                    )
+                ');
+
+                $enriched = [];
+                $regCount = 0;
+
+                foreach ($enrichData as $ref => $data) {
+                    // Update phone on people table
+                    $updatePhone->execute([$data['phone'], $orgId, $ref]);
+
+                    // Update emergency contact + notes on staff_profiles
+                    $updateProfile->execute([
+                        $data['emergency_contact_name'],
+                        $data['emergency_contact_phone'],
+                        $data['notes'],
+                        $orgId, $ref,
+                    ]);
+
+                    // Insert registrations (skip if number already exists for this person)
+                    foreach ($data['registrations'] as $reg) {
+                        $expiryDate = (clone $today)->modify($reg['expiry_offset'])->format('Y-m-d');
+                        $insertReg->execute([
+                            $reg['type'],
+                            $reg['number'],
+                            $reg['body'],
+                            $reg['issue_date'],
+                            $expiryDate,
+                            $reg['renewal_submitted'],
+                            $reg['required'] ? 1 : 0,
+                            $orgId, $ref,
+                            $reg['number'],
+                        ]);
+                        if ($insertReg->rowCount() > 0) $regCount++;
+                    }
+
+                    $enriched[] = $ref;
+                }
+
+                $db->commit();
+
+                $message = count($enriched) . ' staff profiles enriched with contact details and notes.<br>'
+                         . $regCount . ' SSSC registration record(s) added.<br>'
+                         . '<span class="text-light text-small">Registrations include: expired, expiring critical, expiring soon, and active statuses for a realistic demo.</span>';
+            }
+        } catch (PDOException $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            $error = 'Database error: ' . htmlspecialchars($e->getMessage());
+        }
+    }
+
     // ── Action: add logins to existing demo staff ─────────────────────────────
     if ($action === 'add_users') {
         try {
@@ -199,6 +394,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && CSRF::validatePost()) {
 // ── Check current state ───────────────────────────────────────────────────────
 $orgExists = false;
 $staffWithoutLogins = 0;
+$registrationsExist = false;
 $checkOrg = $db->prepare('SELECT id FROM organisations WHERE domain = ? LIMIT 1');
 $checkOrg->execute(['sunrisecare.demo']);
 $existingOrgId = $checkOrg->fetchColumn();
@@ -210,6 +406,10 @@ if ($existingOrgId) {
     ');
     $noLogin->execute([$existingOrgId]);
     $staffWithoutLogins = (int) $noLogin->fetchColumn();
+
+    $regCheck = $db->prepare('SELECT COUNT(*) FROM staff_registrations WHERE organisation_id = ?');
+    $regCheck->execute([$existingOrgId]);
+    $registrationsExist = (int) $regCheck->fetchColumn() > 0;
 }
 
 $pageTitle = 'Seed Demo Data';
@@ -281,6 +481,40 @@ include INCLUDES_PATH . '/header.php';
         <p class="text-light text-small"><i class="fas fa-check-circle" style="color:#059669"></i> All demo staff already have logins.</p>
         <a href="<?php echo url('staff/index.php'); ?>" class="btn btn-primary" style="margin-top:.5rem">
             <i class="fas fa-users"></i> View Staff
+        </a>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
+<!-- ── Enrich demo profiles ────────────────────────────────────────────── -->
+<?php if ($orgExists): ?>
+<div class="card" style="max-width:680px;margin-top:1rem">
+    <h3 style="font-weight:600;margin-bottom:.75rem">Enrich staff profiles</h3>
+    <p class="text-light text-small" style="margin-bottom:.75rem">
+        Adds realistic contact details, emergency contacts, notes, and SSSC professional registration records
+        to the 6 demo staff members. Registration expiry dates are spread across all status levels for a complete demo.
+    </p>
+    <?php if (!$registrationsExist): ?>
+    <ul style="margin:.25rem 0 1.25rem 1.25rem;line-height:1.9;font-size:.9rem">
+        <li>Phone numbers and emergency contacts for all 6 staff</li>
+        <li><strong>Sarah Johnson</strong> — SSSC SC123456, expires in 9 days <span class="badge badge-red" style="font-size:.75rem">Critical</span></li>
+        <li><strong>Michael Chen</strong> — SSSC SC234567, expired 42 days ago <span class="badge badge-red" style="font-size:.75rem">Expired</span></li>
+        <li><strong>Emma Williams</strong> — SSSC SC345678, expires in 52 days <span class="badge badge-amber" style="font-size:.75rem">Due soon</span></li>
+        <li><strong>Rebecca Davies</strong> — SSSC SC567890, expires in 38 days <span class="badge badge-amber" style="font-size:.75rem">Due soon</span></li>
+        <li><strong>James Taylor</strong> — SSSC SC456789, expires in 302 days <span class="badge badge-green" style="font-size:.75rem">Active</span></li>
+        <li><strong>Thomas Brown</strong> — SSSC SC678901, expires in 351 days <span class="badge badge-green" style="font-size:.75rem">Active</span></li>
+    </ul>
+    <form method="POST">
+        <?php echo CSRF::tokenField(); ?>
+        <input type="hidden" name="action" value="enrich">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-address-card"></i> Enrich Profiles
+        </button>
+    </form>
+    <?php else: ?>
+        <p class="text-light text-small"><i class="fas fa-check-circle" style="color:#059669"></i> Profiles already enriched — registration records exist.</p>
+        <a href="<?php echo url('staff/registrations.php'); ?>" class="btn btn-primary" style="margin-top:.5rem">
+            <i class="fas fa-id-badge"></i> View Registrations
         </a>
     <?php endif; ?>
 </div>
