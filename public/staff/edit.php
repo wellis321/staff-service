@@ -862,15 +862,15 @@ html {
 /* Active section highlighting */
 .sidebar-nav-link.active,
 .sidebar-nav a.active {
-    background-color: #2563eb !important;
-    color: white !important;
-    font-weight: 500;
-    border-left-color: #2563eb;
+    background-color: #f0fdf9 !important;
+    color: #0d9488 !important;
+    font-weight: 600;
+    border-left-color: #0d9488 !important;
 }
 
 .sidebar-nav-link.active i,
 .sidebar-nav a.active i {
-    color: white !important;
+    color: #0d9488 !important;
 }
 
 /* Sticky save button */
@@ -2421,9 +2421,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateActiveSection() {
         let current = '';
-        const scrollPosition = window.scrollY + 160;
         sections.forEach(section => {
-            if (scrollPosition >= section.offsetTop) {
+            // getBoundingClientRect().top is viewport-relative — works correctly
+            // regardless of nested containers or position:relative parents
+            if (section.getBoundingClientRect().top <= 160) {
                 current = section.getAttribute('id');
             }
         });
