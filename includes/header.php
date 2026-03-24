@@ -309,6 +309,9 @@
                                     <a href="<?php echo url('staff/index.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'staff/') !== false ? 'active' : ''; ?>">
                                         <i class="fas fa-users"></i> Staff
                                     </a>
+                                    <a href="<?php echo url('staff/registrations.php'); ?>" class="<?php echo strpos($_SERVER['PHP_SELF'], 'registrations.php') !== false ? 'active' : ''; ?>">
+                                        <i class="fas fa-id-badge"></i> Registrations
+                                    </a>
                                     <a href="<?php echo url('staff/approve-changes.php'); ?>" class="<?php echo $isActive('approve-changes.php'); ?>" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
                                         <span><i class="fas fa-user-check"></i> Approve Changes</span>
                                         <?php if ($navBadgeManagerCount > 0): ?>

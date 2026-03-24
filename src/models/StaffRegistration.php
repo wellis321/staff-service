@@ -226,22 +226,192 @@ class StaffRegistration {
     }
     
     /**
-     * Calculate days until expiry
+     * Calculate days until expiry.
+     * Returns a positive integer if in the future, negative if expired.
      */
     public static function daysUntilExpiry($expiryDate) {
         if (!$expiryDate) {
             return null;
         }
-        
+
         $expiry = new DateTime($expiryDate);
-        $today = new DateTime();
-        $diff = $today->diff($expiry);
-        
-        if ($expiry < $today) {
-            return -$diff->days; // Negative for expired
+        $today  = new DateTime('today');
+        $diff   = (int) $today->diff($expiry)->days;
+
+        return $expiry >= $today ? $diff : -$diff;
+    }
+
+    // ── Status helpers ────────────────────────────────────────────────────────
+
+    /**
+     * Notification thresholds: key = days before/after expiry,
+     * value = which recipient types get alerted.
+     */
+    public static function thresholds(): array
+    {
+        return [
+            90 => ['staff'],
+            60 => ['staff', 'manager'],
+            30 => ['staff', 'manager', 'org_admin'],
+            14 => ['staff', 'manager', 'org_admin'],
+             7 => ['staff', 'manager', 'org_admin'],
+             0 => ['staff', 'manager', 'org_admin'],
+            -7 => ['manager', 'org_admin'],
+           -14 => ['manager', 'org_admin'],
+           -21 => ['manager', 'org_admin'],
+           -28 => ['manager', 'org_admin'],
+        ];
+    }
+
+    /**
+     * Derive a status string from days-until-expiry.
+     * Returns: active | expiring_soon | expiring_critical | expired
+     */
+    public static function statusFromDays(?int $days): string
+    {
+        if ($days === null)  return 'unknown';
+        if ($days < 0)       return 'expired';
+        if ($days <= 14)     return 'expiring_critical';
+        if ($days <= 90)     return 'expiring_soon';
+        return 'active';
+    }
+
+    public static function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'expired'           => 'Expired',
+            'expiring_critical' => 'Expiring soon',
+            'expiring_soon'     => 'Due for renewal',
+            default             => 'Active',
+        };
+    }
+
+    public static function statusBadgeClass(string $status): string
+    {
+        return match ($status) {
+            'expired'           => 'badge-red',
+            'expiring_critical' => 'badge-amber',
+            'expiring_soon'     => 'badge-yellow',
+            default             => 'badge-green',
+        };
+    }
+
+    // ── Organisation-wide queries ─────────────────────────────────────────────
+
+    /**
+     * All registrations for an organisation, soonest expiry first.
+     * Includes staff name, job title, and line manager email.
+     */
+    public static function findByOrganisation(int $orgId, bool $activeOnly = true): array
+    {
+        $db  = getDbConnection();
+        $sql = '
+            SELECT sr.*,
+                   p.first_name, p.last_name, p.email AS staff_email,
+                   p.employee_reference,
+                   sp.job_title,
+                   mgr.first_name AS mgr_first,
+                   mgr.last_name  AS mgr_last,
+                   mgr.email      AS mgr_email
+            FROM   staff_registrations sr
+            JOIN   people p             ON p.id  = sr.person_id
+            LEFT   JOIN staff_profiles sp   ON sp.person_id = sr.person_id
+            LEFT   JOIN people mgr          ON mgr.id = sp.line_manager_id
+            WHERE  sr.organisation_id = ?
+        ';
+        $params = [$orgId];
+        if ($activeOnly) {
+            $sql .= ' AND sr.is_active = 1';
         }
-        
-        return $diff->days;
+        $sql .= ' ORDER BY sr.expiry_date ASC';
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        // Attach derived status
+        foreach ($rows as &$row) {
+            $days = self::daysUntilExpiry($row['expiry_date']);
+            $row['days_until'] = $days;
+            $row['reg_status'] = self::statusFromDays($days);
+        }
+        return $rows;
+    }
+
+    /**
+     * All active registrations expiring within 90 days OR expired within 28 days.
+     * Used by the cron notification script — covers all organisations.
+     */
+    public static function findAllForNotificationCheck(): array
+    {
+        $db   = getDbConnection();
+        $stmt = $db->prepare('
+            SELECT sr.*,
+                   p.first_name, p.last_name, p.email AS staff_email,
+                   p.employee_reference,
+                   sp.job_title,
+                   mgr.first_name AS mgr_first,
+                   mgr.last_name  AS mgr_last,
+                   mgr.email      AS mgr_email
+            FROM   staff_registrations sr
+            JOIN   people p             ON p.id  = sr.person_id
+            LEFT   JOIN staff_profiles sp   ON sp.person_id = sr.person_id
+            LEFT   JOIN people mgr          ON mgr.id = sp.line_manager_id
+            WHERE  sr.is_active = 1
+              AND  sr.expiry_date >= DATE_SUB(CURDATE(), INTERVAL 28 DAY)
+              AND  sr.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 90 DAY)
+            ORDER  BY sr.expiry_date ASC
+        ');
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        foreach ($rows as &$row) {
+            $days = self::daysUntilExpiry($row['expiry_date']);
+            $row['days_until'] = $days;
+            $row['reg_status'] = self::statusFromDays($days);
+        }
+        return $rows;
+    }
+
+    // ── Notification helpers ──────────────────────────────────────────────────
+
+    public static function notificationAlreadySent(int $registrationId, int $thresholdKey, string $recipientType): bool
+    {
+        $db   = getDbConnection();
+        $stmt = $db->prepare('
+            SELECT COUNT(*) FROM registration_notifications
+            WHERE registration_id = ? AND threshold_key = ? AND recipient_type = ?
+        ');
+        $stmt->execute([$registrationId, $thresholdKey, $recipientType]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public static function logNotification(int $registrationId, int $thresholdKey, string $recipientType, string $email): void
+    {
+        $db = getDbConnection();
+        $db->prepare('
+            INSERT IGNORE INTO registration_notifications
+                (registration_id, threshold_key, recipient_type, recipient_email)
+            VALUES (?, ?, ?, ?)
+        ')->execute([$registrationId, $thresholdKey, $recipientType, $email]);
+    }
+
+    /**
+     * Organisation admin email addresses for a given org.
+     */
+    public static function getOrgAdminEmails(int $orgId): array
+    {
+        $db   = getDbConnection();
+        $stmt = $db->prepare('
+            SELECT u.email FROM users u
+            JOIN   user_roles ur ON ur.user_id = u.id
+            JOIN   roles r       ON r.id = ur.role_id
+            WHERE  u.organisation_id = ?
+              AND  r.name IN ("organisation_admin", "superadmin")
+              AND  u.is_active = 1
+        ');
+        $stmt->execute([$orgId]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 }
 
