@@ -939,7 +939,7 @@ html {
             <div class="profile-sidebar" style="position: sticky; top: 2rem; align-self: start; height: fit-content;">
                 <div style="background: white; border-right: 1px solid #e5e7eb; padding: 0;">
                     <nav class="sidebar-nav" style="padding: 1rem 0; text-align: left;">
-                        <a href="#section-personal" class="sidebar-nav-link">
+                        <a href="#section-personal" class="sidebar-nav-link active">
                             <i class="fas fa-user"></i> <span>Personal Information</span>
                         </a>
                         <?php if ($person['person_type'] === 'staff'): ?>
@@ -2408,48 +2408,65 @@ if (wtdOptOutCheckbox) {
 }
 
 // Sidebar navigation active section highlighting
-window.addEventListener('load', function() {
-    var links = [].slice.call(document.querySelectorAll('.sidebar-nav a[href^="#"]'));
-    if (!links.length) return;
+document.addEventListener('DOMContentLoaded', function() {
+    var navLinks = [].slice.call(document.querySelectorAll('.sidebar-nav a[href^="#"]'));
+    if (!navLinks.length) return;
 
-    function setActive(link) {
-        links.forEach(function(l) { l.classList.remove('active'); });
-        if (link) link.classList.add('active');
-    }
+    // Build sections list from nav link hrefs
+    var sections = [];
+    navLinks.forEach(function(link) {
+        var el = document.querySelector(link.getAttribute('href'));
+        if (el) sections.push(el);
+    });
 
-    function sync() {
-        var scrollY = window.scrollY;
-        var threshold = scrollY + 160;
-        var best = null, bestTop = -Infinity;
-
-        links.forEach(function(link) {
-            var target = document.querySelector(link.getAttribute('href'));
-            if (!target) return;
-            // Absolute document position
-            var top = target.getBoundingClientRect().top + window.scrollY;
-            if (top <= threshold && top > bestTop) {
-                bestTop = top;
-                best = link;
+    // Handle nav link clicks — smooth scroll
+    navLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            var href = this.getAttribute('href');
+            if (href && href.startsWith('#')) {
+                e.preventDefault();
+                var target = document.getElementById(href.substring(1));
+                if (target) {
+                    navLinks.forEach(function(l) { l.classList.remove('active'); });
+                    this.classList.add('active');
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             }
         });
+    });
 
-        // Only update active state if we found a match — don't clear if nothing is in range
-        if (best) setActive(best);
+    // Update active state on scroll
+    function updateActiveSection() {
+        var scrollPos = window.scrollY + 150;
+        sections.forEach(function(section) {
+            // Use absolute document position (sections are inside a positioned container)
+            var rect = section.getBoundingClientRect();
+            var top    = rect.top + window.scrollY;
+            var bottom = top + section.offsetHeight;
+            var id = section.getAttribute('id');
+            if (scrollPos >= top && scrollPos < bottom) {
+                navLinks.forEach(function(link) {
+                    var href = link.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        link.classList.remove('active');
+                        if (href === '#' + id) link.classList.add('active');
+                    }
+                });
+            }
+        });
     }
 
-    // Initial state: from hash or first visible link
+    // If URL has a hash on load, highlight that link immediately
     if (window.location.hash) {
         var initLink = document.querySelector('.sidebar-nav a[href="' + window.location.hash + '"]');
-        setActive(initLink || links[0]);
-    } else {
-        setActive(links[0]);
+        if (initLink) {
+            navLinks.forEach(function(l) { l.classList.remove('active'); });
+            initLink.classList.add('active');
+        }
     }
 
-    window.addEventListener('scroll', sync, { passive: true });
-    window.addEventListener('hashchange', function() {
-        var link = document.querySelector('.sidebar-nav a[href="' + window.location.hash + '"]');
-        if (link) setActive(link);
-    });
+    window.addEventListener('scroll', updateActiveSection, { passive: true });
+    updateActiveSection();
 });
 
 // Signature pad functionality for edit page
