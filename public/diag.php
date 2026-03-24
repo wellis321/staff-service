@@ -1,7 +1,6 @@
 <?php
 /**
  * Temporary diagnostic — DELETE after use.
- * Accessible without login so we can see the raw error.
  */
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -11,76 +10,106 @@ require_once dirname(__DIR__) . '/config/config.php';
 echo '<pre>';
 echo "PHP: " . PHP_VERSION . "\n\n";
 
-// 1. DB connection
-try {
-    $db = getDbConnection();
-    echo "[OK] DB connection\n";
-} catch (Throwable $e) {
-    echo "[FAIL] DB connection: " . $e->getMessage() . "\n";
+$db = getDbConnection();
+
+// Find the Sunrise Care org ID
+$orgRow = $db->query("SELECT id FROM organisations WHERE domain = 'sunrisecare.demo' LIMIT 1")->fetch();
+$orgId  = $orgRow ? (int)$orgRow['id'] : 0;
+echo "Sunrise Care org_id = $orgId\n\n";
+
+if (!$orgId) {
+    echo "No Sunrise Care org found — seed the demo first.\n";
     exit;
 }
 
-// 2. Key tables
-$tables = [
-    'organisations', 'users', 'people', 'staff_profiles',
-    'staff_registrations', 'pending_profile_changes',
-    'organisation_settings', 'registration_notifications',
-    'rate_limits',
-];
-foreach ($tables as $t) {
-    try {
-        $db->query("SELECT 1 FROM `$t` LIMIT 1");
-        echo "[OK] table: $t\n";
-    } catch (Throwable $e) {
-        echo "[MISSING] table: $t — " . $e->getMessage() . "\n";
-    }
-}
-
-// 3. OrgSettings::ensureTable
-echo "\n";
+// 1. Staff list query (what staff/index.php runs)
 try {
-    OrgSettings::get(1, 'test_key', '');
-    echo "[OK] OrgSettings::get\n";
-} catch (Throwable $e) {
-    echo "[FAIL] OrgSettings: " . $e->getMessage() . "\n";
-}
-
-// 4. TeamServiceClient::enabled
-try {
-    $on = TeamServiceClient::enabled(1);
-    echo "[OK] TeamServiceClient::enabled = " . ($on ? 'true' : 'false') . "\n";
-} catch (Throwable $e) {
-    echo "[FAIL] TeamServiceClient::enabled: " . $e->getMessage() . "\n";
-}
-
-// 5. Person::getStaffByOrganisation
-try {
-    $rows = Person::getStaffByOrganisation(1, true, 1, 0);
-    echo "[OK] Person::getStaffByOrganisation (" . count($rows) . " rows)\n";
+    $perPage = ITEMS_PER_PAGE;
+    $staff = Person::getStaffByOrganisation($orgId, true, $perPage, 0);
+    $total = Person::countStaff($orgId, true);
+    echo "[OK] Person::getStaffByOrganisation — $total staff\n";
 } catch (Throwable $e) {
     echo "[FAIL] Person::getStaffByOrganisation: " . $e->getMessage() . "\n";
 }
 
-// 6. StaffRegistration::findByOrganisation
+// 2. TeamServiceClient with real org ID
 try {
-    $regs = StaffRegistration::findByOrganisation(1);
-    echo "[OK] StaffRegistration::findByOrganisation (" . count($regs) . " rows)\n";
+    $on = TeamServiceClient::enabled($orgId);
+    echo "[OK] TeamServiceClient::enabled($orgId) = " . ($on ? 'true' : 'false') . "\n";
+    if ($on) {
+        $memberships = TeamServiceClient::getAllStaffMemberships($orgId);
+        echo "[OK] getAllStaffMemberships = " . (is_array($memberships) ? count($memberships) . " rows" : "null") . "\n";
+    }
 } catch (Throwable $e) {
-    echo "[FAIL] StaffRegistration::findByOrganisation: " . $e->getMessage() . "\n";
+    echo "[FAIL] TeamServiceClient: " . $e->getMessage() . "\n";
 }
 
-// 7. PendingProfileChange nav badge methods
+// 3. StaffRegistration with real org ID
 try {
-    PendingProfileChange::getPendingCountForManager(1, 1);
-    echo "[OK] PendingProfileChange::getPendingCountForManager\n";
+    $regs = StaffRegistration::findByOrganisation($orgId);
+    echo "[OK] StaffRegistration::findByOrganisation — " . count($regs) . " rows\n";
 } catch (Throwable $e) {
-    echo "[FAIL] PendingProfileChange::getPendingCountForManager: " . $e->getMessage() . "\n";
+    echo "[FAIL] StaffRegistration: " . $e->getMessage() . "\n";
 }
+
+// 4. Find a real person in this org and test nav badge queries
 try {
-    PendingProfileChange::getUnseenReviewedCountForStaff(1);
-    echo "[OK] PendingProfileChange::getUnseenReviewedCountForStaff\n";
+    $personRow = $db->prepare("SELECT id FROM people WHERE organisation_id = ? AND person_type = 'staff' LIMIT 1");
+    $personRow->execute([$orgId]);
+    $person = $personRow->fetch();
+    $personId = $person ? (int)$person['id'] : 0;
+    echo "\nReal person_id = $personId\n";
+
+    if ($personId) {
+        PendingProfileChange::getPendingCountForManager($personId, $orgId);
+        echo "[OK] getPendingCountForManager($personId)\n";
+
+        PendingProfileChange::getUnseenReviewedCountForStaff($personId);
+        echo "[OK] getUnseenReviewedCountForStaff($personId)\n";
+    }
 } catch (Throwable $e) {
-    echo "[FAIL] PendingProfileChange::getUnseenReviewedCountForStaff: " . $e->getMessage() . "\n";
+    echo "[FAIL] PendingProfileChange: " . $e->getMessage() . "\n";
+}
+
+// 5. Test RBAC class loading
+try {
+    $isAdmin = RBAC::isOrganisationAdmin();
+    echo "\n[OK] RBAC::isOrganisationAdmin loaded (returns " . ($isAdmin ? 'true' : 'false') . " — no session)\n";
+} catch (Throwable $e) {
+    echo "[FAIL] RBAC: " . $e->getMessage() . "\n";
+}
+
+// 6. Check seen_by_staff_at column exists
+try {
+    $db->query("SELECT seen_by_staff_at FROM pending_profile_changes LIMIT 1");
+    echo "[OK] pending_profile_changes.seen_by_staff_at column exists\n";
+} catch (Throwable $e) {
+    echo "[MISSING] pending_profile_changes.seen_by_staff_at: " . $e->getMessage() . "\n";
+}
+
+// 7. Check renewal_submitted_at column exists
+try {
+    $db->query("SELECT renewal_submitted_at FROM staff_registrations LIMIT 1");
+    echo "[OK] staff_registrations.renewal_submitted_at column exists\n";
+} catch (Throwable $e) {
+    echo "[MISSING] staff_registrations.renewal_submitted_at: " . $e->getMessage() . "\n";
+}
+
+echo "\n--- renderStaffTable function test ---\n";
+// 8. Try including the renderStaffTable logic
+try {
+    if (!empty($staff)) {
+        ob_start();
+        // Minimal simulation of what renderStaffTable does
+        foreach ($staff as $m) {
+            $initials = strtoupper(substr($m['first_name'], 0, 1) . substr($m['last_name'], 0, 1));
+            $avClass  = 'av-' . strtolower(substr($m['first_name'], 0, 1));
+        }
+        ob_end_clean();
+        echo "[OK] Staff row iteration ok\n";
+    }
+} catch (Throwable $e) {
+    echo "[FAIL] Staff row iteration: " . $e->getMessage() . "\n";
 }
 
 echo "\nDone.\n";
