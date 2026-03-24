@@ -6,9 +6,9 @@
  * colour-coded by expiry status. Admins can see at a glance
  * who needs to act and when.
  */
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
 require_once dirname(__DIR__, 2) . '/config/config.php';
+ini_set('display_errors', 1);  // override production setting for debugging
+error_reporting(E_ALL);
 
 Auth::requireLogin();
 RBAC::requireAdmin();
