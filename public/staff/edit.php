@@ -2412,53 +2412,44 @@ window.addEventListener('load', function() {
     var links = [].slice.call(document.querySelectorAll('.sidebar-nav a[href^="#"]'));
     if (!links.length) return;
 
-    function getDocTop(el) {
-        // Absolute distance from document top — reliable across all layout types
-        return el.getBoundingClientRect().top + window.scrollY;
+    function setActive(link) {
+        links.forEach(function(l) { l.classList.remove('active'); });
+        if (link) link.classList.add('active');
     }
 
     function sync() {
         var scrollY = window.scrollY;
-        var threshold = scrollY + 140;
+        var threshold = scrollY + 160;
         var best = null, bestTop = -Infinity;
 
         links.forEach(function(link) {
             var target = document.querySelector(link.getAttribute('href'));
             if (!target) return;
-            var top = getDocTop(target);
-            // The section whose top is closest to (but not past) the threshold
+            // Absolute document position
+            var top = target.getBoundingClientRect().top + window.scrollY;
             if (top <= threshold && top > bestTop) {
                 bestTop = top;
                 best = link;
             }
         });
 
-        links.forEach(function(l) { l.classList.remove('active'); });
-        if (best) best.classList.add('active');
+        // Only update active state if we found a match — don't clear if nothing is in range
+        if (best) setActive(best);
+    }
+
+    // Initial state: from hash or first visible link
+    if (window.location.hash) {
+        var initLink = document.querySelector('.sidebar-nav a[href="' + window.location.hash + '"]');
+        setActive(initLink || links[0]);
+    } else {
+        setActive(links[0]);
     }
 
     window.addEventListener('scroll', sync, { passive: true });
     window.addEventListener('hashchange', function() {
-        // Immediately highlight on hash click, then sync takes over on scroll
-        var id = window.location.hash.slice(1);
-        var link = document.querySelector('.sidebar-nav a[href="#' + id + '"]');
-        if (link) {
-            links.forEach(function(l) { l.classList.remove('active'); });
-            link.classList.add('active');
-        }
+        var link = document.querySelector('.sidebar-nav a[href="' + window.location.hash + '"]');
+        if (link) setActive(link);
     });
-
-    // Initial state
-    if (window.location.hash) {
-        var id = window.location.hash.slice(1);
-        var link = document.querySelector('.sidebar-nav a[href="#' + id + '"]');
-        if (link) {
-            links.forEach(function(l) { l.classList.remove('active'); });
-            link.classList.add('active');
-        }
-    }
-    // Also run position-based sync after everything has settled
-    setTimeout(sync, 300);
 });
 
 // Signature pad functionality for edit page
