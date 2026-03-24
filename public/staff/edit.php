@@ -2353,7 +2353,8 @@ html {
 
 <script>
 // Auto-fill job title when job post is selected
-document.getElementById('job_post_id').addEventListener('change', function() {
+var jobPostSelect = document.getElementById('job_post_id') || document.getElementById('new_role_job_post_id');
+if (jobPostSelect) jobPostSelect.addEventListener('change', function() {
     const jobPostId = this.value;
     const jobTitleField = document.getElementById('job_title');
     
