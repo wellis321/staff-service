@@ -7,13 +7,17 @@
  * who needs to act and when.
  */
 require_once dirname(__DIR__, 2) . '/config/config.php';
-ini_set('display_errors', 1);  // override production setting for debugging
-error_reporting(E_ALL);
 
 Auth::requireLogin();
 RBAC::requireAdmin();
 
 $organisationId = Auth::getOrganisationId();
+
+// Super admins have no org — redirect to org list
+if (!$organisationId) {
+    header('Location: ' . url('admin/organisations.php'));
+    exit;
+}
 
 // ── Filters ───────────────────────────────────────────────────────────────────
 $filter = $_GET['filter'] ?? 'all';   // all | action_needed | expired

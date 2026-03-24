@@ -5,6 +5,13 @@ Auth::requireLogin();
 RBAC::requireAdmin();
 
 $organisationId = Auth::getOrganisationId();
+
+// Super admins have no org — redirect to org list
+if (!$organisationId) {
+    header('Location: ' . url('admin/organisations.php'));
+    exit;
+}
+
 $error   = $_GET['error']   ?? '';
 $success = $_GET['success'] ?? '';
 
