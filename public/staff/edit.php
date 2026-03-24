@@ -2411,29 +2411,41 @@ if (wtdOptOutCheckbox) {
 document.addEventListener('DOMContentLoaded', function() {
     const sections = document.querySelectorAll('[id^="section-"]');
     const navLinks = document.querySelectorAll('.sidebar-nav a');
-    
+
+    function setActive(id) {
+        navLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            link.classList.toggle('active', href === '#' + id || href.endsWith('#' + id));
+        });
+    }
+
     function updateActiveSection() {
         let current = '';
-        const scrollPosition = window.scrollY + 150;
-        
+        const scrollPosition = window.scrollY + 160;
         sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.clientHeight;
-            if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+            if (scrollPosition >= section.offsetTop) {
                 current = section.getAttribute('id');
             }
         });
-        
-        navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === '#' + current) {
-                link.classList.add('active');
-            }
-        });
+        if (current) setActive(current);
     }
-    
+
+    // Set active from URL hash immediately (handles direct links like #section-registrations)
+    function applyHash() {
+        const hash = window.location.hash.replace('#', '');
+        if (hash) {
+            setActive(hash);
+        } else {
+            updateActiveSection();
+        }
+    }
+
     window.addEventListener('scroll', updateActiveSection);
-    updateActiveSection();
+    window.addEventListener('hashchange', applyHash);
+
+    // Run after a short delay so the browser has finished scrolling to the anchor
+    applyHash();
+    setTimeout(applyHash, 100);
 });
 
 // Signature pad functionality for edit page
