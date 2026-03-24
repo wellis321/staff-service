@@ -31,7 +31,7 @@ $staffDefs = [
     ['Rebecca', 'Davies',   'rebecca.davies@sunrisecare.demo', '1995-06-18', 'EMP005', 'Support Worker',        '2022-01-10'],
     ['Thomas',  'Brown',    'thomas.brown@sunrisecare.demo',   '1983-09-14', 'EMP006', 'Night Support Worker',  '2021-11-15'],
 ];
-$password     = 'Sunrise2024!';
+$password     = 'SunriseCare1';
 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
 // ── POST handlers ─────────────────────────────────────────────────────────────
