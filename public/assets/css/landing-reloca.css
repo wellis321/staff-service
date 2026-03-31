@@ -1,0 +1,1588 @@
+/**
+ * Staff Service landing — Reloca-inspired layout (editorial sections, kickers, grids).
+ * Uses palette aligned with CLAUDE.md: charcoal, teal, warm neutrals.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@9..144,500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+
+.landing-reloca {
+  --lr-font: 'Outfit', system-ui, sans-serif;
+  --lr-display: 'Fraunces', Georgia, serif;
+  --lr-ink: #0f172a;
+  --lr-muted: #475569;
+  --lr-warm: #faf8f5;
+  --lr-cream: #f5f0e8;
+  --lr-line: #e2e8f0;
+  --lr-teal: #0d9488;
+  --lr-teal-dk: #0f766e;
+  --lr-charcoal: #1c2b3a;
+  --lr-amber: #f59e0b;
+  --lr-pad: clamp(1.25rem, 4vw, 2.75rem);
+  --lr-radius: 12px;
+  --lr-max: 1200px;
+  font-family: var(--lr-font);
+  color: var(--lr-ink);
+  line-height: 1.6;
+}
+
+.landing-reloca *,
+.landing-reloca *::before,
+.landing-reloca *::after {
+  box-sizing: border-box;
+}
+
+/* Full-bleed breakout from main.container */
+.landing-reloca__bleed {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+
+.landing-reloca__inner {
+  max-width: var(--lr-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--lr-pad);
+  padding-right: var(--lr-pad);
+}
+
+/* Kickers / labels (Reloca-style small heading) */
+.lr-kicker {
+  display: block;
+  font-family: var(--lr-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--lr-teal);
+  margin-bottom: 0.75rem;
+}
+
+/* ── Hero — Framer Reloca template match (flat lavender, sans type, blue CTA, floating pills) */
+.lr-hero--reloca {
+  background: #eef0ff;
+  padding: clamp(2.5rem, 6vw, 5rem) 0 clamp(2.5rem, 5vw, 4.5rem);
+  position: relative;
+}
+
+.lr-hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+  position: relative;
+}
+
+/* Orange dot + label (Reloca “New Country. New Life.”) */
+.lr-hero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  font-family: var(--lr-font);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: 0.01em;
+  color: #0f172a;
+}
+
+.lr-hero__eyebrow-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f97316;
+  flex-shrink: 0;
+}
+
+/* Headline: sans-serif, near-black (template uses single sans family) */
+.lr-hero--reloca .lr-hero__title {
+  font-family: var(--lr-font);
+  font-size: clamp(2.15rem, 4.5vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  color: #0a0a0a;
+  margin: 0 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.02em;
+}
+
+.lr-hero__title-line {
+  display: block;
+}
+
+.lr-hero--reloca .lr-hero__lead {
+  font-size: 1.0625rem;
+  color: #4b5563;
+  margin: 0 0 2rem;
+  max-width: 32rem;
+  line-height: 1.6;
+}
+
+.lr-hero--reloca .lr-hero__lead strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* CTA row: primary + outline (Reloca) */
+.lr-hero__cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}
+
+.lr-hero__cta-btns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.75rem;
+}
+
+.lr-btn--reloca {
+  background: #2563eb;
+  color: #fff !important;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+.lr-btn--reloca:hover {
+  background: #1d4ed8;
+  color: #fff !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.lr-btn--reloca-outline {
+  background: #fff;
+  color: #111827 !important;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.lr-btn--reloca-outline:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  color: #111827 !important;
+}
+
+.lr-btn--hero {
+  padding: 0.95rem 1.65rem;
+  font-size: 0.95rem;
+  border-radius: 999px;
+}
+
+/* Image column + floating UI (Reloca right column) */
+.lr-hero__visual {
+  position: relative;
+  justify-self: end;
+  width: 100%;
+  max-width: 520px;
+}
+
+/* White frame like Reloca “Image Wrapper” (data-border) */
+.lr-hero__figure {
+  border-radius: 24px;
+  overflow: hidden;
+  border: 12px solid #fff;
+  box-shadow:
+    0 25px 50px -12px rgba(15, 23, 42, 0.18),
+    0 0 0 1px rgba(15, 23, 42, 0.05);
+  aspect-ratio: 1;
+  max-height: min(520px, 70vh);
+}
+
+.lr-hero__figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lr-hero__float {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  background: #fff;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #111827;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.lr-hero__float i {
+  color: #2563eb;
+  font-size: 0.75rem;
+}
+
+.lr-hero__float--tl {
+  top: 12%;
+  left: -4%;
+}
+
+.lr-hero__float--tr {
+  top: 8%;
+  right: -2%;
+}
+
+.lr-hero__float--br {
+  bottom: 28%;
+  right: -4%;
+}
+
+.lr-hero__social-pill {
+  position: absolute;
+  left: 6%;
+  bottom: 8%;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 1rem 0.55rem 0.55rem;
+  background: #fff;
+  border-radius: 999px;
+  box-shadow: 0 12px 28px -8px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  z-index: 2;
+  max-width: calc(100% - 1.5rem);
+}
+
+.lr-hero__avatars {
+  display: flex;
+  align-items: center;
+}
+
+.lr-hero__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  margin-left: -10px;
+}
+
+.lr-hero__avatar:first-child {
+  margin-left: 0;
+}
+
+.lr-hero__social-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  line-height: 1.25;
+}
+
+/* Capability list below hero (content preserved; not in Reloca hero) */
+.lr-hero-pills {
+  background: #eef0ff;
+  padding: 0 0 clamp(2rem, 4vw, 3rem);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+.lr-hero__bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.lr-hero__bullets--grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem 1.5rem;
+}
+
+.lr-hero__bullets li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.9rem;
+  color: #374151;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.lr-hero__bullets li i {
+  color: #2563eb;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  width: 1.1rem;
+  text-align: center;
+}
+
+.lr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.95rem 1.65rem;
+  font-family: var(--lr-font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.lr-btn--primary {
+  background: var(--lr-teal);
+  color: #fff;
+}
+
+.lr-btn--primary:hover {
+  background: var(--lr-teal-dk);
+  color: #fff;
+}
+
+.lr-btn--ghost {
+  background: transparent;
+  color: var(--lr-charcoal);
+  border-color: var(--lr-line);
+}
+
+.lr-btn--ghost:hover {
+  border-color: var(--lr-teal);
+  color: var(--lr-teal-dk);
+}
+
+/* Trust strip */
+.lr-trust {
+  background: #fff;
+  border-top: 1px solid var(--lr-line);
+  border-bottom: 1px solid var(--lr-line);
+  padding: 1.75rem 0;
+}
+
+.lr-trust__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem 3rem;
+}
+
+.lr-trust__badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--lr-charcoal);
+}
+
+.lr-trust__badge i {
+  color: var(--lr-amber);
+}
+
+.lr-trust__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.lr-trust__stat {
+  text-align: left;
+}
+
+.lr-trust__stat strong {
+  display: block;
+  font-family: var(--lr-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--lr-charcoal);
+  line-height: 1.2;
+}
+
+.lr-trust__stat span {
+  font-size: 0.8rem;
+  color: var(--lr-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/*
+ * About section — Reloca template (stacked intro + accent + pill CTA + soft blob)
+ * https://reloca-template.framer.website/
+ */
+.lr-about-reloca {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  padding: clamp(3rem, 6vw, 5.5rem) 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* Soft organic shape (Reloca beige wash, bottom-left) */
+.lr-about-reloca::before {
+  content: '';
+  position: absolute;
+  width: min(120%, 1100px);
+  height: min(85%, 640px);
+  left: -25%;
+  bottom: -35%;
+  background: radial-gradient(
+    ellipse 65% 55% at 35% 75%,
+    #fdf8f4 0%,
+    rgba(253, 248, 244, 0.55) 42%,
+    transparent 72%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lr-about-reloca > .landing-reloca__inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Top: narrow “About us” column beside wide copy (Reloca layout) ─── */
+.lr-about-reloca__top {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 10.5rem) minmax(0, 1fr);
+  gap: clamp(1.25rem, 3.5vw, 3rem);
+  align-items: start;
+  width: 100%;
+  max-width: 100%;
+  padding-bottom: clamp(2.5rem, 5vw, 4rem);
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.lr-about-reloca__top-body {
+  min-width: 0;
+}
+
+.lr-about-reloca__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding-top: 0.35rem;
+  font-family: var(--lr-font);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #1a1a1a;
+  line-height: 1.3;
+}
+
+.lr-about-reloca__eyebrow-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #d96d2c;
+  flex-shrink: 0;
+}
+
+/* Headline uses full width of main column (template spans most of the row) */
+.lr-about-reloca__statement {
+  margin: 0;
+  font-family: var(--lr-font);
+  font-size: clamp(1.35rem, 2.4vw, 2.05rem);
+  font-weight: 700;
+  line-height: 1.28;
+  letter-spacing: -0.03em;
+  color: #1a1a1a;
+  max-width: none;
+}
+
+.lr-about-reloca__accent {
+  color: #d96d2c;
+  font-weight: 700;
+}
+
+/* Reloca indigo pill — shared by About + Services top wrappers */
+.lr-about-reloca__btn,
+.lr-svc-top__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.75rem;
+  padding: 0.95rem 1.85rem;
+  font-family: var(--lr-font);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #fff !important;
+  text-decoration: none;
+  background: #5b6ed1;
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 4px 18px rgba(91, 110, 209, 0.38);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.lr-about-reloca__btn:hover,
+.lr-svc-top__btn:hover {
+  background: #4a5dc4;
+  color: #fff !important;
+  box-shadow: 0 6px 22px rgba(91, 110, 209, 0.45);
+  transform: translateY(-1px);
+}
+
+/*
+ * Services — Reloca “Top Content Wrapper” (framer-p0ny2b / Top Content Wrapper)
+ * Heading + supporting line + View all services, beside “Services” label
+ */
+.lr-svc-top {
+  background: #fff;
+  padding: clamp(2.75rem, 5vw, 4.25rem) 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.lr-svc-top__wrap {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 10.5rem) minmax(0, 1fr);
+  gap: clamp(1.25rem, 3.5vw, 3rem);
+  align-items: start;
+  width: 100%;
+}
+
+.lr-svc-top__body {
+  min-width: 0;
+}
+
+.lr-svc-top__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding-top: 0.35rem;
+  font-family: var(--lr-font);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #1a1a1a;
+  line-height: 1.3;
+}
+
+.lr-svc-top__eyebrow-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #d96d2c;
+  flex-shrink: 0;
+}
+
+.lr-svc-top__title {
+  margin: 0;
+  font-family: var(--lr-font);
+  font-size: clamp(1.45rem, 2.6vw, 2.15rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  color: #1a1a1a;
+  max-width: none;
+}
+
+.lr-svc-top__lead {
+  margin: 1rem 0 0;
+  font-family: var(--lr-font);
+  font-size: clamp(1rem, 1.5vw, 1.125rem);
+  font-weight: 500;
+  line-height: 1.6;
+  color: #4b5563;
+  max-width: none;
+}
+
+/* ── Lower row: subline + stat + twin images ───────────────── */
+.lr-about-reloca__lower {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: end;
+}
+
+.lr-about-reloca__subline {
+  margin: 0 0 1.75rem;
+  font-family: var(--lr-font);
+  font-size: clamp(1rem, 1.8vw, 1.125rem);
+  font-weight: 600;
+  line-height: 1.45;
+  color: #1f2937;
+}
+
+.lr-about-reloca__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.lr-about-reloca__stat-num {
+  font-family: var(--lr-font);
+  font-size: clamp(3rem, 7vw, 4.25rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: #0a0a0a;
+}
+
+.lr-about-reloca__stat-label {
+  font-family: var(--lr-font);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #6b7280;
+  max-width: 14rem;
+}
+
+.lr-about-reloca__photos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.75rem, 2vw, 1.25rem);
+  align-items: stretch;
+}
+
+.lr-about-reloca__fig {
+  margin: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.05);
+  aspect-ratio: 4/5;
+  background: linear-gradient(145deg, #e5e7eb, #d1d5db);
+}
+
+.lr-about-reloca__fig img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@media (max-width: 720px) {
+  .lr-about-reloca__top {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding-bottom: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .lr-about-reloca__eyebrow {
+    padding-top: 0;
+  }
+
+  .lr-about-reloca__btn,
+  .lr-svc-top__btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .lr-svc-top__wrap {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .lr-svc-top__eyebrow {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 960px) {
+  .lr-about-reloca__lower {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .lr-about-reloca__subline {
+    margin-bottom: 1.25rem;
+  }
+
+  .lr-about-reloca__photos {
+    order: -1;
+    margin-bottom: 0.5rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .lr-about-reloca__photos {
+    grid-template-columns: 1fr;
+  }
+
+  .lr-about-reloca__fig {
+    aspect-ratio: 16/10;
+    max-height: 220px;
+  }
+}
+
+/* Section titles */
+.lr-section-head {
+  text-align: center;
+  max-width: 42rem;
+  margin: 0 auto 3rem;
+}
+
+.lr-section-head h2 {
+  font-family: var(--lr-display);
+  font-size: clamp(1.85rem, 3vw, 2.5rem);
+  font-weight: 700;
+  color: var(--lr-charcoal);
+  margin: 0 0 1rem;
+  letter-spacing: -0.02em;
+}
+
+.lr-section-head p {
+  margin: 0;
+  color: var(--lr-muted);
+  font-size: 1.05rem;
+}
+
+/* Comparison */
+.lr-compare {
+  padding: clamp(3rem, 6vw, 5rem) 0;
+  background: #fff;
+}
+
+.lr-compare__item {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 4vw, 3.5rem);
+  align-items: center;
+  margin-bottom: clamp(3rem, 5vw, 4.5rem);
+}
+
+.lr-compare__item:last-child {
+  margin-bottom: 0;
+}
+
+.lr-compare__item--flip .lr-compare__media {
+  order: 2;
+}
+
+.lr-compare__item--flip .lr-compare__copy {
+  order: 1;
+}
+
+.lr-compare__media {
+  border-radius: var(--lr-radius);
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(28, 43, 58, 0.1);
+  min-height: 280px;
+  /* Visible if image 404s (wrong /public/ prefix on host, missing file, etc.) */
+  background: linear-gradient(145deg, #e2e8f0 0%, #cbd5e1 100%);
+}
+
+.lr-compare__media img {
+  width: 100%;
+  height: auto;
+  min-height: 280px;
+  object-fit: cover;
+  display: block;
+  background-color: #cbd5e1;
+}
+
+.lr-compare__copy h3 {
+  font-family: var(--lr-display);
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  margin: 0 0 1rem;
+  color: var(--lr-charcoal);
+}
+
+.lr-compare__copy p {
+  margin: 0 0 1rem;
+  color: var(--lr-muted);
+  font-size: 1.02rem;
+}
+
+.lr-compare__copy p:last-child {
+  margin-bottom: 0;
+}
+
+/* Services — Framer Reloca “Tablet” cards (pastel fill, 10px radius, white pill tag) */
+.lr-services {
+  padding: 0;
+  background: #f7f7f9;
+}
+
+.lr-services__cards {
+  padding: clamp(2.5rem, 5vw, 4.25rem) 0;
+}
+
+.lr-services__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(1.5rem, 2.5vw, 2rem);
+}
+
+.lr-svc-card {
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.2s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Pastel fills — aligned to Reloca token rgb(215, 218, 238) and siblings */
+.lr-svc-card--pastel-1 {
+  background: #d7daee;
+}
+
+.lr-svc-card--pastel-2 {
+  background: #e4e5eb;
+}
+
+.lr-svc-card--pastel-3 {
+  background: #fde8d8;
+}
+
+.lr-svc-card--pastel-4 {
+  background: #d8ebe4;
+}
+
+.lr-svc-card:hover {
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Copy column + right-hand abstract art (Reloca service tiles) */
+.lr-svc-card__layout {
+  display: grid;
+  grid-template-columns: 1fr minmax(6.25rem, min(36%, 12rem));
+  align-items: stretch;
+  flex: 1;
+  min-height: 15.5rem;
+}
+
+.lr-svc-card__body {
+  padding: clamp(1.75rem, 3.5vw, 2.35rem);
+  padding-right: 0.65rem;
+  min-width: 0;
+  flex: 1;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Right panel: template abstract art (AVIF), crops to column */
+.lr-svc-card__art {
+  position: relative;
+  min-height: 11rem;
+  border-radius: 0 10px 10px 0;
+  overflow: hidden;
+  transition: transform 0.35s ease;
+}
+
+.lr-svc-card__art::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12%;
+  bottom: 12%;
+  width: 1px;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(15, 23, 42, 0.07) 35%,
+    rgba(15, 23, 42, 0.07) 65%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.lr-svc-card__art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.lr-svc-card:hover .lr-svc-card__art {
+  transform: scale(1.03);
+}
+
+/* White pill + coloured dot (Reloca service card) */
+.lr-svc-card__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 1.25rem;
+  padding: 0.4rem 0.85rem;
+  background: #fff;
+  border-radius: 999px;
+  font-family: var(--lr-font);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #111827;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+.lr-svc-card__tag-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lr-svc-card__tag--blue .lr-svc-card__tag-dot {
+  background: #3b82f6;
+}
+
+.lr-svc-card__tag--slate .lr-svc-card__tag-dot {
+  background: #64748b;
+}
+
+.lr-svc-card__tag--ink .lr-svc-card__tag-dot {
+  background: #1e293b;
+}
+
+.lr-svc-card__tag--amber .lr-svc-card__tag-dot {
+  background: #ea580c;
+}
+
+.lr-svc-card__tag--green .lr-svc-card__tag-dot {
+  background: #059669;
+}
+
+.lr-svc-card__tag--violet .lr-svc-card__tag-dot {
+  background: #7c3aed;
+}
+
+/* Sans headline + body (Framer tablet card — not serif) */
+.lr-svc-card__body h3 {
+  font-family: var(--lr-font);
+  font-size: clamp(1.2rem, 2vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.85rem;
+  color: #0a0a0a;
+}
+
+.lr-svc-card__body p {
+  margin: 0;
+  font-family: var(--lr-font);
+  font-size: 0.98rem;
+  line-height: 1.55;
+  font-weight: 500;
+  color: #1f2937;
+  flex: 1;
+}
+
+/* Reloca card CTA: label + thin underline + trailing arrow (not a thick rule) */
+.lr-svc-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1.35rem;
+  align-self: flex-start;
+  font-family: var(--lr-font);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #0a0a0a;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.lr-svc-card__link:visited {
+  color: #0a0a0a;
+}
+
+.lr-svc-card__link-label {
+  text-decoration: underline;
+  text-decoration-color: #0a0a0a;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  transition: text-decoration-color 0.2s;
+}
+
+.lr-svc-card__link .fa-arrow-right {
+  font-size: 0.72em;
+  margin-top: 0.05em;
+  transition: transform 0.2s ease;
+}
+
+.lr-svc-card__link:hover {
+  color: #111827;
+}
+
+.lr-svc-card__link:hover .lr-svc-card__link-label {
+  text-decoration-color: #374151;
+}
+
+.lr-svc-card__link:hover .fa-arrow-right {
+  transform: translateX(3px);
+}
+
+/* Feature slider — teal overlay, no glass blur */
+.lr-slider-wrap {
+  padding: clamp(2.5rem, 5vw, 4rem) 0;
+  background: #fff;
+}
+
+.lr-slider {
+  position: relative;
+  border-radius: var(--lr-radius);
+  overflow: hidden;
+  max-width: var(--lr-max);
+  margin: 0 auto;
+  min-height: 420px;
+  box-shadow: 0 20px 50px rgba(28, 43, 58, 0.12);
+}
+
+.lr-slider__track {
+  display: flex;
+  width: 300%;
+  height: 100%;
+  min-height: 420px;
+  transition: transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.lr-slide {
+  width: 33.333333%;
+  flex-shrink: 0;
+  position: relative;
+  min-height: 420px;
+  overflow: hidden;
+  /* Base colour when background photo fails to load */
+  background-color: #64748b;
+}
+
+.lr-slide__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+}
+
+.lr-slide::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Lighter scrim so missing images are not a solid black slab */
+  background: linear-gradient(
+    105deg,
+    rgba(28, 43, 58, 0.58) 0%,
+    rgba(28, 43, 58, 0.38) 55%,
+    rgba(13, 148, 136, 0.32) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+.lr-slide__inner {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(2rem, 5vw, 3.5rem);
+  max-width: 36rem;
+}
+
+.lr-slide__inner h3 {
+  font-family: var(--lr-display);
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  color: #fff;
+  margin: 0 0 1rem;
+}
+
+.lr-slide__inner p {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 1.05rem;
+  line-height: 1.75;
+  margin: 0 0 1rem;
+}
+
+.lr-slide__inner p:last-child {
+  margin-bottom: 0;
+}
+
+.lr-slider__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--lr-charcoal);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.lr-slider__nav:hover {
+  background: #fff;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.lr-slider__nav--prev {
+  left: 1.25rem;
+}
+
+.lr-slider__nav--next {
+  right: 1.25rem;
+}
+
+.lr-slider__dots {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.lr-slider__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.lr-slider__dot.is-active {
+  background: #fff;
+  transform: scale(1.15);
+}
+
+/* Alternating feature bands */
+.lr-band {
+  padding: clamp(3rem, 6vw, 5rem) 0;
+  background: #fff;
+}
+
+.lr-band--alt {
+  background: #f8fafc;
+}
+
+.lr-band__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 4vw, 3rem);
+  align-items: center;
+}
+
+.lr-band--flip .lr-band__text {
+  order: 2;
+}
+
+.lr-band--flip .lr-band__media {
+  order: 1;
+}
+
+.lr-band__text h2 {
+  font-family: var(--lr-display);
+  font-size: clamp(1.65rem, 2.8vw, 2.15rem);
+  margin: 0 0 1rem;
+  color: var(--lr-charcoal);
+}
+
+.lr-band__text p {
+  margin: 0 0 1rem;
+  color: var(--lr-muted);
+  font-size: 1.05rem;
+}
+
+.lr-band__text p:last-child {
+  margin-bottom: 0;
+}
+
+.lr-band__media {
+  border-radius: var(--lr-radius);
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(28, 43, 58, 0.1);
+}
+
+.lr-band__media img {
+  width: 100%;
+  height: auto;
+  min-height: 280px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Icon feature grid */
+.lr-features {
+  padding: clamp(2.5rem, 5vw, 4rem) 0;
+  background: #fff;
+}
+
+.lr-features__inner {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.lr-feat {
+  padding: 1.75rem;
+  border-radius: var(--lr-radius);
+  border: 1px solid var(--lr-line);
+  background: var(--lr-warm);
+  transition: border-color 0.2s;
+}
+
+.lr-feat:hover {
+  border-color: rgba(13, 148, 136, 0.35);
+}
+
+.lr-feat__icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 10px;
+  background: rgba(13, 148, 136, 0.12);
+  color: var(--lr-teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  margin-bottom: 1rem;
+}
+
+.lr-feat h3 {
+  font-family: var(--lr-display);
+  font-size: 1.2rem;
+  margin: 0 0 0.5rem;
+  color: var(--lr-charcoal);
+}
+
+.lr-feat p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--lr-muted);
+}
+
+/* GDPR block */
+.lr-gdpr {
+  padding: clamp(3rem, 6vw, 5rem) 0;
+  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+}
+
+.lr-gdpr h2 {
+  font-family: var(--lr-display);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  margin: 0 0 1.5rem;
+  color: var(--lr-charcoal);
+}
+
+.lr-gdpr__float {
+  float: right;
+  width: min(400px, 42%);
+  margin: 0 0 1rem 2rem;
+  border-radius: var(--lr-radius);
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(28, 43, 58, 0.1);
+}
+
+.lr-gdpr__float img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.lr-gdpr__text {
+  overflow: hidden;
+}
+
+.lr-gdpr__text p {
+  color: var(--lr-muted);
+  font-size: 1.05rem;
+  margin: 0 0 1.25rem;
+}
+
+/* Testimonials — slate band (not flat black) */
+.lr-quote-section {
+  padding: clamp(3rem, 6vw, 5rem) 0;
+  background: linear-gradient(180deg, #243142 0%, #1c2b3a 50%, #243142 100%);
+  color: #e2e8f0;
+}
+
+.lr-quote-section .lr-section-head h2 {
+  color: #fff;
+}
+
+.lr-quote-section .lr-section-head p {
+  color: #94a3b8;
+}
+
+.lr-quote-section .lr-kicker {
+  color: #5eead4;
+}
+
+.lr-quotes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.lr-quote {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--lr-radius);
+  padding: 2rem;
+}
+
+.lr-quote__text {
+  font-size: 1.05rem;
+  line-height: 1.75;
+  margin: 0 0 1.5rem;
+  font-style: italic;
+  color: #f1f5f9;
+}
+
+.lr-quote__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lr-quote__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--lr-teal);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.lr-quote__who strong {
+  display: block;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.lr-quote__who span {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+/* Final CTA */
+.lr-cta {
+  padding: clamp(3.5rem, 7vw, 6rem) 0;
+  background: linear-gradient(135deg, var(--lr-teal) 0%, #0f766e 55%, var(--lr-charcoal) 100%);
+  text-align: center;
+  color: #fff;
+}
+
+.lr-cta h2 {
+  font-family: var(--lr-display);
+  font-size: clamp(1.85rem, 3.5vw, 2.75rem);
+  margin: 0 0 1rem;
+}
+
+.lr-cta > .landing-reloca__inner > p {
+  font-size: 1.15rem;
+  opacity: 0.95;
+  max-width: 36rem;
+  margin: 0 auto 1.75rem;
+}
+
+.lr-cta .lr-btn--primary {
+  background: #fff;
+  color: var(--lr-teal-dk);
+}
+
+.lr-cta .lr-btn--primary:hover {
+  background: var(--lr-warm);
+  color: var(--lr-charcoal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lr-svc-card,
+  .lr-svc-card__art,
+  .lr-slider__track,
+  .lr-btn {
+    transition: none;
+  }
+
+  .lr-svc-card:hover .lr-svc-card__art {
+    transform: none;
+  }
+}
+
+@media (max-width: 968px) {
+  .lr-hero__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lr-hero__visual {
+    order: -1;
+    justify-self: center;
+    max-width: 100%;
+  }
+
+  .lr-hero__figure {
+    max-height: 360px;
+    aspect-ratio: 16/10;
+    border-radius: 20px;
+    border-width: 10px;
+  }
+
+  .lr-hero__float {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.65rem;
+  }
+
+  .lr-hero__float--tl {
+    left: 2%;
+    top: 10%;
+  }
+
+  .lr-hero__float--tr {
+    right: 2%;
+    top: 6%;
+  }
+
+  .lr-hero__float--br {
+    right: 2%;
+    bottom: 30%;
+  }
+
+  .lr-hero__social-pill {
+    left: 4%;
+    bottom: 6%;
+    padding: 0.45rem 0.75rem 0.45rem 0.45rem;
+  }
+
+  .lr-hero__bullets--grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lr-compare__item,
+  .lr-compare__item--flip {
+    grid-template-columns: 1fr;
+  }
+
+  .lr-compare__item--flip .lr-compare__media,
+  .lr-compare__item--flip .lr-compare__copy {
+    order: unset;
+  }
+
+  .lr-services__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lr-svc-card__layout {
+    grid-template-columns: 1fr minmax(5.5rem, min(32%, 10rem));
+  }
+
+  .lr-band__grid,
+  .lr-band--flip .lr-band__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lr-band--flip .lr-band__text,
+  .lr-band--flip .lr-band__media {
+    order: unset;
+  }
+
+  .lr-features__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .lr-quotes {
+    grid-template-columns: 1fr;
+  }
+
+  .lr-gdpr__float {
+    float: none;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 1.5rem;
+  }
+
+  .lr-slider__nav {
+    width: 40px;
+    height: 40px;
+  }
+
+  .lr-slider__nav--prev {
+    left: 0.65rem;
+  }
+
+  .lr-slider__nav--next {
+    right: 0.65rem;
+  }
+}
+
+/* Service cards: abstract art below copy on narrow viewports */
+@media (max-width: 640px) {
+  .lr-svc-card__layout {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .lr-svc-card__body {
+    padding-right: clamp(1.75rem, 3.5vw, 2.35rem);
+    padding-bottom: 1rem;
+  }
+
+  .lr-svc-card__art {
+    border-radius: 0 0 10px 10px;
+    min-height: 7rem;
+  }
+
+  .lr-svc-card__art::before {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .lr-trust__row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lr-hero__cta-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lr-hero__cta-btns {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .lr-hero__cta-btns .lr-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

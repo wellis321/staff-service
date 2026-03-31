@@ -4,7 +4,8 @@
 # Starts PHP built-in server on localhost:8000
 
 echo "Starting People Management Service..."
-echo "Server will be available at: http://localhost:8000"
+echo "Server will be available at: http://127.0.0.1:8000"
+echo "(Use 127.0.0.1 if Firefox shows a Python-style 404 for localhost — IPv6 can hit a different process.)"
 echo ""
 echo "Press Ctrl+C to stop the server"
 echo ""
@@ -25,7 +26,7 @@ if [ ! -d shared-auth ]; then
     echo ""
 fi
 
-# Start PHP server
+# Start PHP server (127.0.0.1 avoids Firefox using ::1 and reaching a different app on port 8000)
 cd public
-php -S localhost:8000
+php -S 127.0.0.1:8000
 
